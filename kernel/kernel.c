@@ -3,7 +3,6 @@
 #include "gdt.h"
 #include "idt.h"
 #include "keyboard.h"
-#include "bitmap.h"
 
 
 void print(const char *str) {

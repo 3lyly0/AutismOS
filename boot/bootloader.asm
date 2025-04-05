@@ -1,4 +1,3 @@
-; constants for multiboot header
 MEMINFO     equ  1<<0
 BOOTDEVICE  equ  1<<1
 CMDLINE     equ  1<<2
@@ -18,7 +17,6 @@ CHECKSUM    equ -(MAGIC_HEADER + FLAGS)
 BOOTLOADER_MAGIC  equ  0x2BADB002
 
 
-; set multiboot section
 section .multiboot
     align 4
     dd MAGIC_HEADER
