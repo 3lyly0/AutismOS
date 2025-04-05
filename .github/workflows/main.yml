@@ -25,7 +25,11 @@ jobs:
           grub-pc-bin \
           grub-common \
           genisoimage \
-          build-essential
+          build-essential \
+          libc6-dev \
+          gcc-multilib \
+          libc6-dev-i386 
+
 
     - name: Build AutismOS
       run: make
