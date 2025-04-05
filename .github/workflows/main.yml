@@ -28,7 +28,8 @@ jobs:
           build-essential \
           libc6-dev \
           gcc-multilib \
-          libc6-dev-i386 
+          libc6-dev-i386 \
+          mtools
 
 
     - name: Build AutismOS
