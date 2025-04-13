@@ -15,5 +15,9 @@ int isalpha(char c);
 char upper(char c);
 char lower(char c);
 void itoa(char *buf, int base, int d);
+void print(const char *str);
+void print_hex(uint32_t num);
+void update_cursor(int row, int col);
+void clear_screen();
 
 #endif
