@@ -8,8 +8,24 @@
 #define PAGE_SIZE 4096
 #define MEMORY_SIZE 0x1000000
 #define BITMAP_SIZE (MEMORY_SIZE / PAGE_SIZE / 8)
+#define TOTAL_PAGES (MEMORY_SIZE / PAGE_SIZE)
 
 static uint8_t memory_bitmap[BITMAP_SIZE];
+
+
+
+int is_page_used(size_t page) {
+    return memory_bitmap[page / 8] & (1 << (page % 8));
+}
+
+int no_free_pages() {
+    for (int i = 0; i < TOTAL_PAGES; i++) {
+        if (!is_page_used(i)) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 void set_page_used(size_t page) {
     memory_bitmap[page / 8] |= (1 << (page % 8));
@@ -19,22 +35,37 @@ void set_page_free(size_t page) {
     memory_bitmap[page / 8] &= ~(1 << (page % 8));
 }
 
-int is_page_used(size_t page) {
-    return memory_bitmap[page / 8] & (1 << (page % 8));
-}
-
-void *allocate_page() {
-    for (size_t i = 0; i < BITMAP_SIZE * 8; i++) {
+void *get_free_page() {
+    for (int i = 1; i < TOTAL_PAGES; i++) {
         if (!is_page_used(i)) {
-            set_page_used(i);
-            print("Allocated page at index: ");
+            print("Found free page at index: ");
             print_hex(i);
             print("\n");
+
+            set_page_used(i);
             return (void *)(i * PAGE_SIZE);
         }
     }
-    print("No free pages available.\n");
+    print("No free pages found in get_free_page.\n");
     return NULL;
+}
+
+void *allocate_page() {
+    if (no_free_pages()) {
+        print("No free pages available.\n");
+        return NULL;
+    }
+
+    void *page = get_free_page();
+    if (page == NULL) {
+        print("Failed to get a free page.\n");
+    } else {
+        print("Allocated page at: ");
+        print_hex((uint32_t)page);
+        print("\n");
+    }
+
+    return page;
 }
 
 void free_page(void *ptr) {
@@ -43,8 +74,10 @@ void free_page(void *ptr) {
 }
 
 void memory_init() {
-    for (size_t i = 0; i < BITMAP_SIZE; i++) {
-        memory_bitmap[i] = 0;
+    memset(memory_bitmap, 0, BITMAP_SIZE);
+
+    for (int i = 0; i < TOTAL_PAGES; i++) {
+        set_page_free(i);
     }
     print("Memory initialized. All pages set to free.\n");
     print("BITMAP_SIZE: ");

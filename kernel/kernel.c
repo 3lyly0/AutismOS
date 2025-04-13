@@ -8,7 +8,7 @@
 #include "video.h"
 #include "keyboard.h"
 #include "io_ports.h"
-
+#include "disk.h"
 
 
 void kmain() {
@@ -16,20 +16,14 @@ void kmain() {
     idt_init();
     memory_init();
     keyboard_init();
-    mouse_init();
+    // mouse_init();
     clear_screen();
     print("Welcome to AutismOS!\n");
-    print("Press any key to see it on the screen...\n");
 
-    void *page = allocate_page();
-    if (page) {
-        print("Page allocated at: ");
-        print_hex((uint32_t)page);
-        print("\n");
-    } else {
-        print("Failed to allocate page.\n");
-    }
-    
+
+
+
+    // print("Press any key to see it on the screen...\n");
     while (1) {
         char c = kb_getchar();
         if (c != 0) {

@@ -2,12 +2,31 @@
 #include "video.h"
 #include "io_ports.h"
 
-#define VIDEO_MEMORY 0xB8000
+#define VIDEO_MEMORY ((volatile char *)0xB8000)
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
 
 static int cursor_x = 0;
 static int cursor_y = 0;
+
+void scroll_screen() {
+    volatile char *video_memory = VIDEO_MEMORY;
+
+    for (int y = 1; y < SCREEN_HEIGHT; y++) {
+        for (int x = 0; x < SCREEN_WIDTH; x++) {
+            int from_index = (y * SCREEN_WIDTH + x) * 2;
+            int to_index = ((y - 1) * SCREEN_WIDTH + x) * 2;
+            video_memory[to_index] = video_memory[from_index];
+            video_memory[to_index + 1] = video_memory[from_index + 1];
+        }
+    }
+
+    for (int x = 0; x < SCREEN_WIDTH; x++) {
+        int index = ((SCREEN_HEIGHT - 1) * SCREEN_WIDTH + x) * 2;
+        video_memory[index] = ' ';
+        video_memory[index + 1] = 0x07;
+    }
+}
 
 void clear_screen() {
     volatile char *video = (volatile char *)VIDEO_MEMORY;
@@ -46,13 +65,13 @@ void print(const char *str) {
             }
         }
         if (row >= SCREEN_HEIGHT) {
-            clear_screen();
-            row = 0;
-            col = 0;
+            scroll_screen();
+            row = SCREEN_HEIGHT - 1;
         }
-        update_cursor(row, col);
         str++;
     }
+
+    update_cursor(row, col);
 }
 
 void update_cursor(int row, int col) {
