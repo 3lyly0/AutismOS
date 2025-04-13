@@ -14,8 +14,9 @@ char g_scan_code_chars[128] = {
     '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
     0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', 0,
     '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, '*', 0, ' ',
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '-', 0, 0, 0, '+', 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    '-', 0, 0, 0, '+', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 
@@ -65,21 +66,13 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
     g_ch = 0;
     scancode = get_scancode();
     if (scancode & 0x80) {
+        if (scancode == (SCAN_CODE_KEY_LEFT_SHIFT | 0x80)) {
+            g_shift_pressed = FALSE;
+        }
     } else {
         switch(scancode) {
             case SCAN_CODE_KEY_CAPS_LOCK:
-                if (g_caps_lock == FALSE)
-                    g_caps_lock = TRUE;
-                else
-                    g_caps_lock = FALSE;
-                break;
-
-            case SCAN_CODE_KEY_ENTER:
-                g_ch = '\n';
-                break;
-
-            case SCAN_CODE_KEY_TAB:
-                g_ch = '\t';
+                g_caps_lock = !g_caps_lock;
                 break;
 
             case SCAN_CODE_KEY_LEFT_SHIFT:
@@ -89,19 +82,12 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
             default:
                 g_ch = g_scan_code_chars[scancode];
                 if (g_caps_lock) {
-                    if (g_shift_pressed) {
-                        g_ch = alternate_chars(g_ch);
-                    } else
+                    if (isalpha(g_ch)) {
                         g_ch = upper(g_ch);
-                } else {
-                    if (g_shift_pressed) {
-                        if (isalpha(g_ch))
-                            g_ch = upper(g_ch);
-                        else 
-                        g_ch = alternate_chars(g_ch);
-                    } else
-                        g_ch = g_scan_code_chars[scancode];
-                    g_shift_pressed = FALSE;
+                    }
+                }
+                if (g_shift_pressed) {
+                    g_ch = alternate_chars(g_ch);
                 }
                 break;
         }
