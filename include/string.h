@@ -1,6 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 
+#include <stdint.h>
 #include "types.h"
 
 void *memset(void *dst, char c, uint32 n);
@@ -15,9 +16,8 @@ int isalpha(char c);
 char upper(char c);
 char lower(char c);
 void itoa(char *buf, int base, int d);
-void print(const char *str);
-void print_hex(uint32_t num);
-void update_cursor(int row, int col);
-void clear_screen();
+int strncmp(const char *s1, const char *s2, int n);
+char *strncpy(char *dest, const char *src, int n);
+
 
 #endif

@@ -10,5 +10,7 @@ uint16 inports(uint16 port);
 void outports(uint16 port, uint16 data);
 uint32 inportl(uint16 port);
 void outportl(uint16 port, uint32 data);
+uint16_t inportw(uint16_t port);
+void outportw(uint16_t port, uint16_t data);
 
 #endif

@@ -32,7 +32,7 @@ OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o\
 		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/kernel.o\
-		$(BUILD)/video.o
+		$(BUILD)/video.o $(BUILD)/disk.o
 
 
 all: $(BUILD) $(OBJECTS)
@@ -100,6 +100,9 @@ $(BUILD)/keyboard.o : $(DRIVERS)/keyboard.c
 
 $(BUILD)/mouse.o : $(DRIVERS)/mouse.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/mouse.c -o $(BUILD)/mouse.o
+
+$(BUILD)/disk.o : $(DRIVERS)/disk.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/disk.c -o $(BUILD)/disk.o
 
 
 
