@@ -8,8 +8,8 @@ uint8 inportb(uint16 port) {
 }
 
 
-void outportb(uint16 port, uint8 val) {
-    asm volatile("outb %1, %0" :: "dN"(port), "a"(val));
+void outportb(uint16 port, uint8 value) {
+    asm volatile("outb %1, %0" :: "dN"(port), "a"(value));
 }
 
 

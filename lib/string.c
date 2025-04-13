@@ -1,5 +1,8 @@
+#include <stdint.h>
 #include "string.h"
 #include "types.h"
+#include "io_ports.h"
+
 
 void *memset(void *dst, char c, uint32 n) {
     char *temp = dst;

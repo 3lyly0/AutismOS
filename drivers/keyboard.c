@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "keyboard.h"
 #include "idt.h"
 #include "io_ports.h"
