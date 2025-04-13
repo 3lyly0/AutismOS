@@ -31,7 +31,8 @@ ISO_DIR=isodir
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o\
-		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/kernel.o
+		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/kernel.o\
+		$(BUILD)/video.o
 
 
 all: $(BUILD) $(OBJECTS)
@@ -85,6 +86,12 @@ $(BUILD)/isr.o : $(KERNEL)/isr.c
 
 $(BUILD)/8259_pic.o : $(KERNEL)/8259_pic.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/8259_pic.c -o $(BUILD)/8259_pic.o
+
+$(BUILD)/memory.o : $(KERNEL)/memory.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/memory.c -o $(BUILD)/memory.o
+
+$(BUILD)/video.o : $(KERNEL)/video.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/video.c -o $(BUILD)/video.o
 
 
 
