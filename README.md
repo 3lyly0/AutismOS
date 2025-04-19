@@ -23,7 +23,7 @@ Make sure you have the following installed on your system:
 #### **1. Clone the Repository**
 Clone the AutismOS repository to your local machine:
 ```bash
-git clone https://github.com/your-repo/AutismOS.git
+git clone https://github.com/3lyly0/AutismOS.git
 cd AutismOS
 ```
 ---
