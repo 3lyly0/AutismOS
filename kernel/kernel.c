@@ -9,6 +9,7 @@
 #include "keyboard.h"
 #include "io_ports.h"
 #include "disk.h"
+#include "sound.h"
 
 
 void kmain() {
@@ -19,11 +20,11 @@ void kmain() {
     // mouse_init();
     clear_screen();
     print("Welcome to AutismOS!\n");
+    beep();
+    print("Press any key to see it on the screen...\n");
 
 
 
-
-    // print("Press any key to see it on the screen...\n");
     while (1) {
         char c = kb_getchar();
         if (c != 0) {
