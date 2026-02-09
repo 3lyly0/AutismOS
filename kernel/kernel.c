@@ -13,7 +13,7 @@
 #include "sound.h"
 
 // Global tick counter for timer
-volatile uint64_t g_timer_ticks = 0;
+volatile uint64 g_timer_ticks = 0;
 
 // Timer interrupt handler
 void timer_interrupt_handler(REGISTERS *regs) {
