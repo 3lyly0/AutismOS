@@ -68,7 +68,7 @@ void kernel_panic(const char* message) {
 
 ```c
 // Global tick counter
-volatile uint64_t g_timer_ticks = 0;
+volatile uint64 g_timer_ticks = 0;
 
 // Timer interrupt handler (IRQ0)
 void timer_interrupt_handler(REGISTERS *regs) {
