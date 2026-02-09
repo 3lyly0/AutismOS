@@ -1,7 +1,9 @@
-#include <stdio.h>
+#include <stddef.h>
 #include "isr.h"
 #include "idt.h"
 #include "8259_pic.h"
+#include "video.h"
+#include "kernel.h"
 
 
 ISR g_interrupt_handlers[NO_INTERRUPT_HANDLERS];
@@ -64,8 +66,19 @@ void isr_irq_handler(REGISTERS *reg) {
 
 void isr_exception_handler(REGISTERS reg) {
     if (reg.int_no < 32) {
-        for (;;)
-            ;
+        // Print exception information
+        print("\n\nEXCEPTION: ");
+        print(exception_messages[reg.int_no]);
+        print("\nInterrupt number: ");
+        print_hex(reg.int_no);
+        print("\nError code: ");
+        print_hex(reg.err_code);
+        print("\nEIP: ");
+        print_hex(reg.eip);
+        print("\n");
+        
+        // Call kernel panic
+        kernel_panic("Unhandled CPU Exception");
     }
     if (g_interrupt_handlers[reg.int_no] != NULL) {
         ISR handler = g_interrupt_handlers[reg.int_no];

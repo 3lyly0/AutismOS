@@ -3,6 +3,7 @@
 #include "string.h"
 #include "gdt.h"
 #include "idt.h"
+#include "isr.h"
 #include "memory.h"
 #include "mouse.h"
 #include "video.h"
@@ -11,10 +12,53 @@
 #include "disk.h"
 #include "sound.h"
 
+// Global tick counter for timer
+volatile uint64_t g_timer_ticks = 0;
+
+// Timer interrupt handler
+void timer_interrupt_handler(REGISTERS *regs) {
+    (void)regs; // Suppress unused parameter warning
+    g_timer_ticks++;
+}
+
+// Halt the CPU forever
+static inline void halt_cpu_forever() {
+    for (;;) {
+        asm volatile("cli");
+        asm volatile("hlt");
+    }
+}
+
+// Kernel panic handler - never returns
+void kernel_panic(const char* message) {
+    // Disable interrupts immediately
+    asm volatile("cli");
+    
+    // Print panic message
+    print("\n\n*** KERNEL PANIC ***\n");
+    print(message);
+    print("\n");
+    print("System halted.\n");
+    
+    // Halt CPU forever
+    halt_cpu_forever();
+}
+
+// Helper function for halting CPU (used in idle loop)
+static inline void halt_cpu() {
+    asm volatile("hlt");
+}
 
 void kmain() {
     gdt_init();
     idt_init();
+    
+    // Register timer interrupt handler (IRQ0 = interrupt 32)
+    isr_register_interrupt_handler(IRQ_BASE + IRQ0_TIMER, timer_interrupt_handler);
+    
+    // Now it's safe to enable interrupts
+    asm volatile("sti");
+    
     memory_init();
     keyboard_init();
     // mouse_init();
@@ -31,6 +75,8 @@ void kmain() {
             char str[2] = {c, '\0'};
             print(str);
         }
+        // Use hlt instruction to save power when idle
+        halt_cpu();
     }
 }
 
