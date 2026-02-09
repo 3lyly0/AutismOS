@@ -1,6 +1,8 @@
 #ifndef VIDEO_H
 #define VIDEO_H
 
+#include <stdint.h>
+
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
 
