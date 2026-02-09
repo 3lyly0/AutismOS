@@ -59,6 +59,11 @@ void isr_irq_handler(REGISTERS *reg) {
     if (g_interrupt_handlers[reg->int_no] != NULL) {
         ISR handler = g_interrupt_handlers[reg->int_no];
         handler(reg);
+    } else {
+        // Log unhandled interrupt for debugging
+        print("WARNING: Unhandled interrupt ");
+        print_hex(reg->int_no);
+        print("\n");
     }
     pic8259_eoi(reg->int_no);
 }
