@@ -93,14 +93,16 @@ task_t* task_create(void (*entry_point)(void)) {
     // Allocate task structure
     task_t* new_task = (task_t*)kmalloc(sizeof(task_t));
     if (!new_task) {
-        kernel_panic("Failed to allocate task structure");
+        debug_print("ERROR: Failed to allocate task structure\n");
+        return NULL;
     }
     
     // Allocate stack
     void* stack = kmalloc(TASK_STACK_SIZE);
     if (!stack) {
         kfree(new_task);
-        kernel_panic("Failed to allocate task stack");
+        debug_print("ERROR: Failed to allocate task stack\n");
+        return NULL;
     }
     
     // Initialize task structure

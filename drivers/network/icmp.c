@@ -69,23 +69,36 @@ void icmp_receive(uint8* packet, uint16 length, uint32 src_ip) {
     }
 }
 
-#define DELAY_ITERATIONS_PER_MS 10000
+#define DELAY_ITERATIONS_PER_MS 1000
 
 int icmp_wait_reply(uint32* src_ip, uint32 timeout_ms) {
     extern void rtl8139_poll_receive(void);
+    extern volatile uint64 g_timer_ticks;
     
-    for (uint32 i = 0; i < timeout_ms * 100; i++) {
+    uint64 start_ticks = g_timer_ticks;
+    uint64 timeout_ticks = timeout_ms / 10;  // Timer runs at ~100Hz
+    
+    if (timeout_ticks < 10) timeout_ticks = 10;  // Minimum 100ms
+    
+    while ((g_timer_ticks - start_ticks) < timeout_ticks) {
+        // Poll for incoming packets
         rtl8139_poll_receive();
         
+        // Check if we received a reply
         if (echo_state.received) {
             if (src_ip) {
                 *src_ip = echo_state.src_ip;
             }
-            return 0;
+            return 0;  // Success
         }
         
+        // Small delay and yield to other processes
         for (volatile int j = 0; j < DELAY_ITERATIONS_PER_MS; j++);
+        
+        // Allow interrupts and yield
+        asm volatile("sti");
+        asm volatile("hlt");  // Wait for next interrupt
     }
     
-    return -1;
+    return -1;  // Timeout
 }

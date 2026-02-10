@@ -6,11 +6,24 @@
 #include "types.h"
 #include "string.h"
 #include "ux.h"
+#include "desktop.h"
+
+// External function to check if desktop mode is active
+extern uint8 is_desktop_mode(void);
 
 static BOOL g_caps_lock = FALSE;
 static BOOL g_shift_pressed = FALSE;
 static BOOL g_alt_pressed = FALSE;
+static BOOL g_ctrl_pressed = FALSE;
+static BOOL g_extended = FALSE;  // E0 prefix received
 char g_ch = 0;
+
+#define SCAN_CODE_KEY_CTRL 0x1D
+
+// Special key codes (not printable)
+#define KEY_WIN     0x80  // Windows key (Start menu)
+#define KEY_F10     0x81  // F10 (Quit)
+#define KEY_F12     0x82  // F12
 
 char g_scan_code_chars[128] = {
     0, 27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -68,12 +81,37 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
 
     g_ch = 0;
     scancode = get_scancode();
+    
+    // Handle extended scancode prefix (E0)
+    if (scancode == 0xE0) {
+        g_extended = TRUE;
+        return;  // Wait for next scancode
+    }
+    
+    // Handle extended keys
+    if (g_extended) {
+        g_extended = FALSE;
+        if (!(scancode & 0x80)) {  // Key press, not release
+            if (scancode == 0x5B || scancode == 0x5C) {
+                // Left or Right Windows key pressed
+                g_ch = KEY_WIN;
+                if (is_desktop_mode()) {
+                    desktop_handle_key(g_ch);
+                }
+                return;
+            }
+        }
+        return;  // Ignore other extended keys for now
+    }
+    
     if (scancode & 0x80) {
         // Key released
         if (scancode == (SCAN_CODE_KEY_LEFT_SHIFT | 0x80)) {
             g_shift_pressed = FALSE;
         } else if (scancode == (SCAN_CODE_KEY_ALT | 0x80)) {
             g_alt_pressed = FALSE;
+        } else if (scancode == (SCAN_CODE_KEY_CTRL | 0x80)) {
+            g_ctrl_pressed = FALSE;
         }
     } else {
         // Key pressed
@@ -90,6 +128,10 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
                 g_alt_pressed = TRUE;
                 break;
 
+            case SCAN_CODE_KEY_CTRL:
+                g_ctrl_pressed = TRUE;
+                break;
+
             default:
                 g_ch = g_scan_code_chars[scancode];
                 if (g_caps_lock) {
@@ -101,9 +143,24 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
                     g_ch = alternate_chars(g_ch);
                 }
                 
+                // Handle Ctrl+Key combinations
+                if (g_ctrl_pressed && g_ch != 0) {
+                    // Ctrl+Q = send quit signal (ASCII 17)
+                    if (g_ch == 'q' || g_ch == 'Q') {
+                        if (is_desktop_mode()) {
+                            desktop_handle_key(17);  // Ctrl+Q
+                        }
+                    }
+                    return;
+                }
+                
                 // Handle Alt+Key combinations (Step 8: UX Hotkeys)
                 if (g_alt_pressed && g_ch != 0) {
                     ux_handle_hotkey(g_ch);
+                }
+                // Send to desktop if active
+                else if (is_desktop_mode() && g_ch != 0) {
+                    desktop_handle_key(g_ch);
                 }
                 // Step 9: Route input to UX for UI handling
                 else if (g_ch != 0) {
