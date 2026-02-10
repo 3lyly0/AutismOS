@@ -145,8 +145,10 @@ void paging_init() {
     memset(&kernel_page_directory, 0, sizeof(kernel_page_directory));
     memset(first_page_table, 0, sizeof(first_page_table));
     
-    uint32_t kernel_end_addr = (uint32_t)&__kernel_section_end;
-    uint32_t pages_to_map = (kernel_end_addr + PAGE_SIZE - 1) / PAGE_SIZE + 64;
+    // Map all available usable memory with identity paging
+    // This ensures that virtual addresses = physical addresses for kernel code and heap
+    // Use memory_end that was detected from multiboot memory map
+    uint32_t pages_to_map = memory_end / PAGE_SIZE;
     
     if (pages_to_map > PAGE_TABLE_SIZE) {
         pages_to_map = PAGE_TABLE_SIZE;
@@ -205,11 +207,15 @@ page_directory_t* create_page_directory(void) {
     
     // Copy kernel mappings from the kernel page directory
     // This ensures kernel code is accessible from all processes
+    // Important: Only copy the entries (which contain physical addresses),
+    // NOT the virtual pointers in tables[]
     for (int dir_index = 0; dir_index < PAGE_DIRECTORY_SIZE; dir_index++) {
         if (kernel_page_directory.entries[dir_index] != 0) {
-            // Copy kernel mappings (typically the first few entries for kernel space)
+            // Copy kernel page directory entries (these contain physical addresses)
             dir->entries[dir_index] = kernel_page_directory.entries[dir_index];
-            dir->tables[dir_index] = kernel_page_directory.tables[dir_index];
+            // Extract the physical address from the entry and get its virtual pointer
+            uint32_t phys_addr = kernel_page_directory.entries[dir_index] & 0xFFFFF000;
+            dir->tables[dir_index] = (uint32_t*)phys_addr;
         }
     }
     
@@ -222,11 +228,15 @@ void switch_page_directory(page_directory_t* dir) {
         kernel_panic("Attempted to switch to NULL page directory");
     }
     
-    // Load the new page directory into CR3
+    // Get physical address of the page directory
+    // With identity paging (virt=phys), cast pointer to physical address
+    uint32_t phys_addr = (uint32_t)dir;
+    
+    // Load the physical address into CR3
     asm volatile(
         "mov %0, %%cr3\n"
         :
-        : "r" (dir)
+        : "r" (phys_addr)
         : "memory"
     );
 }
