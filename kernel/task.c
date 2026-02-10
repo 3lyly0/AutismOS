@@ -16,6 +16,7 @@ extern void process_switch(process_t* next);
 static task_t* current_task = NULL;
 static task_t* task_list_head = NULL;
 static uint32 next_task_id = 0;
+static int scheduler_started = 0;  // Flag to track if we've started scheduling
 
 // Get current task
 task_t* task_get_current(void) {
@@ -38,6 +39,14 @@ uint32 task_scheduler_tick(uint32 current_esp) {
         return current_esp;
     }
     
+    // On first scheduler tick, we're not in a task context yet
+    // So don't save the ESP - just switch to the first task
+    if (!scheduler_started) {
+        scheduler_started = 1;
+        current_task->state = TASK_RUNNING;
+        return current_task->esp;  // Return the first task's prepared ESP
+    }
+    
     // Save current task's ESP
     current_task->esp = current_esp;
     current_task->state = TASK_READY;
@@ -53,9 +62,12 @@ uint32 task_scheduler_tick(uint32 current_esp) {
     }
     
     // Check if we need to switch processes (address spaces)
+    // NOTE: For Step 4, we're keeping all processes in the same address space
+    // but the infrastructure is ready for per-process page directories
     if (next_task->process != current_task->process && next_task->process != NULL) {
-        // Switch to the next task's process (which will switch page directories)
-        process_switch((process_t*)next_task->process);
+        // Would switch to the next task's process here
+        // process_switch((process_t*)next_task->process);
+        // For now, we just track that we would switch but don't actually change CR3
     }
     
     // Switch to next task
@@ -71,6 +83,7 @@ void task_init(void) {
     current_task = NULL;
     task_list_head = NULL;
     next_task_id = 0;
+    scheduler_started = 0;
     print("Task system initialized\n");
 }
 

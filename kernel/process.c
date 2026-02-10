@@ -26,7 +26,7 @@ void process_init(void) {
     print("Process subsystem initialized\n");
 }
 
-// Create a new process
+// Process creation with user space support
 process_t* process_create(void (*entry_point)(void), uint32 is_user_mode) {
     // Allocate process structure
     process_t* new_process = (process_t*)kmalloc(sizeof(process_t));
@@ -43,6 +43,10 @@ process_t* process_create(void (*entry_point)(void), uint32 is_user_mode) {
         kfree(new_process);
         kernel_panic("Failed to create page directory for process");
     }
+    
+    // If this is a user mode process, we'd set up user space here
+    // For now, we just create kernel mode processes
+    (void)is_user_mode;  // Suppress unused warning
     
     // Create main thread for this process
     // Note: We'll create the task but manage it through the process
@@ -73,8 +77,8 @@ process_t* process_create(void (*entry_point)(void), uint32 is_user_mode) {
     
     print("Process created: PID=");
     print_hex(new_process->pid);
-    print(" at 0x");
-    print_hex((uint32)new_process);
+    print(" PageDir=0x");
+    print_hex((uint32)new_process->page_dir);
     print("\n");
     
     return new_process;
