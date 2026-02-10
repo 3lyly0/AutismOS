@@ -74,7 +74,55 @@ void isr_irq_handler(REGISTERS *reg) {
 }
 
 
+// Page fault handler - reads CR2 to get the faulting address
+void page_fault_handler(REGISTERS *reg) {
+    uint32 faulting_address;
+    
+    // Read CR2 to get the address that caused the fault
+    asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
+    
+    print("\n\nPAGE FAULT\n");
+    print("Address: ");
+    print_hex(faulting_address);
+    print("\n");
+    print("Error code: ");
+    print_hex(reg->err_code);
+    print("\n");
+    
+    // Decode error code
+    print("Details: ");
+    if (reg->err_code & 0x1) {
+        print("Protection violation ");
+    } else {
+        print("Not-present ");
+    }
+    
+    if (reg->err_code & 0x2) {
+        print("Write ");
+    } else {
+        print("Read ");
+    }
+    
+    if (reg->err_code & 0x4) {
+        print("User-mode\n");
+    } else {
+        print("Kernel-mode\n");
+    }
+    
+    print("EIP: ");
+    print_hex(reg->eip);
+    print("\n");
+    
+    kernel_panic("Page Fault Exception");
+}
+
 void isr_exception_handler(REGISTERS reg) {
+    // Special handling for page faults (exception 14)
+    if (reg.int_no == 14) {
+        page_fault_handler(&reg);
+        return;
+    }
+    
     if (reg.int_no < 32) {
         // Print exception information
         print("\n\nEXCEPTION: ");
