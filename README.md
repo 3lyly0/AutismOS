@@ -2,26 +2,34 @@
 
 AutismOS is a minimalistic educational operating system designed for learning low-level system programming, with a focus on bootloading, interrupts, hardware interaction, and **browser-oriented architecture**.
 
-**Latest Achievement: Step 5 - IPC, Messaging & Event-Driven Execution ✅**
+**Latest Achievement: Steps 6 & 7 - Browser-Capable OS ✅**
 
 ---
 
 ## **Current Features**
 
-### ✅ Step 5: IPC & Messaging (COMPLETE)
-- **Kernel-mediated message passing** between isolated processes
-- **Event-driven execution model** (browser architecture foundation)
-- **3 IPC syscalls**: SYS_SEND, SYS_RECV, SYS_POLL
-- **Browser-Renderer demo**: Multiple processes communicating safely
-- **Security**: Pointer validation, no shared memory
-- **Per-process message queues** (16 messages each)
+### ✅ Steps 6 & 7: Browser-Capable Operating System (COMPLETE)
+
+#### Step 6: Shared Memory, Graphics & Rendering
+- **Shared memory syscalls** (SYS_SHM_CREATE, SYS_SHM_MAP, SYS_SHM_UNMAP)
+- **Zero-copy framebuffer** rendering between processes
+- **Framebuffer structure** (320×200 resolution, 32-bit RGBA)
+- **Frame events** via IPC (FRAME_READY notifications)
+- **Security**: Reference counting, PID ownership, size limits
+
+#### Step 7: Input, Networking & Browser Core
+- **Input delivery** via IPC (keyboard and mouse events)
+- **URL parsing** for http:// protocol
+- **HTTP/1.0 networking** (minimal GET requests)
+- **HTML parser** supporting html, body, h1, p, a tags
+- **Layout engine** with vertical flow (primitive but functional)
+- **Text rendering** to framebuffer with fixed-width font
+- **Browser main loop** with complete event-driven architecture
+- **Complete pipeline**: URL → Network → Parse → Layout → Render → Display
 
 ### ✅ Previous Steps
-- Process abstraction with separate address spaces
-- Task scheduling and context switching
-- Memory management with paging
-- Interrupt handling (IRQ, exceptions)
-- Basic syscall interface
+- **Step 5**: IPC, Messaging & Event-Driven Execution
+- **Step 0-4**: Process abstraction, memory management, task scheduling, interrupts, syscalls
 - Bootloader and kernel initialization
 
 ---
@@ -103,27 +111,41 @@ If you make changes to the source code, follow these steps to rebuild and run th
 
 When you run AutismOS, you'll see:
 - System initialization and memory setup
-- **Step 5 Demo**: Browser and Renderer processes communicating via IPC
-- Real-time counters showing message passing
-- Three isolated processes with separate page directories
+- **Steps 6 & 7 Demo**: Complete browser pipeline execution
+- Renderer creating shared framebuffer
+- Browser mapping framebuffer (zero-copy)
+- HTML fetching, parsing, layout, and rendering
+- Frame-ready notifications via IPC
+- Three isolated processes working together
 
 Example output:
 ```
-=== Step 5: IPC, Messaging & Event-Driven Execution ===
-Process created: PID=0 (Renderer - HTML/Layout engine)
-Process created: PID=1 (Browser - UI/Control)
-Process created: PID=2 (Monitor - System monitor)
+=== Steps 6 & 7: Browser-Capable Operating System ===
+Step 6: Shared memory, framebuffer rendering
+Step 7: Input, networking, HTML parsing, layout
 
-Browser <-> Renderer IPC demonstration running.
-Browser:0x490 Renderer:0x42D Ticks:0x15
+Renderer process: PID=0x00000000 (Network + HTML + Layout + Render)
+Browser process: PID=0x00000001 (UI/Input/Compositor)
+
+[Renderer] Created shared framebuffer ID: 0x00000001 (320x200)
+[Renderer] Framebuffer mapped at: 0x00113000
+[Browser] User entered URL: http://example.com/
+[Renderer] Fetching http://example.com/
+[Renderer] HTTP Response: 200 (151 bytes)
+[Renderer] Parsing HTML...
+[Renderer] Creating layout...
+[Renderer] Rendering to framebuffer...
+[Browser] Page rendered and displayed!
 ```
 
 ---
 
 ### **Documentation**
 
-- **`STEP5_IPC.md`**: Detailed IPC implementation guide
-- **`IMPLEMENTATION_SUMMARY.md`**: Complete feature summary
+- **`STEP6_7_IMPLEMENTATION.md`**: Complete Step 6 & 7 implementation guide
+- **`STEP5_IPC.md`**: IPC implementation details
+- **`IMPLEMENTATION_SUMMARY.md`**: Feature summary
+- **`ARCHITECTURE.md`**: System architecture
 
 ---
 
