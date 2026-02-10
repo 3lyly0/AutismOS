@@ -1,6 +1,6 @@
 #include "graphics.h"
 #include "video.h"
-#include <stdint.h>
+#include "types.h"
 
 #define VIDEO_MEMORY ((volatile char *)0xB8000)
 #define SCREEN_WIDTH 80
