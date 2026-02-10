@@ -24,7 +24,7 @@ void process_init(void) {
     current_process = NULL;
     process_list_head = NULL;
     next_pid = 0;
-    print("Process subsystem initialized\n");
+    debug_print("Process subsystem initialized\n");
 }
 
 // Process creation with user space support
@@ -79,11 +79,11 @@ process_t* process_create(void (*entry_point)(void), uint32 is_user_mode) {
         new_process->next = process_list_head;
     }
     
-    print("Process created: PID=");
-    print_hex(new_process->pid);
-    print(" PageDir=0x");
-    print_hex((uint32)new_process->page_dir);
-    print("\n");
+    debug_print("Process created: PID=");
+    debug_print_hex(new_process->pid);
+    debug_print(" PageDir=0x");
+    debug_print_hex((uint32)new_process->page_dir);
+    debug_print("\n");
     
     return new_process;
 }
