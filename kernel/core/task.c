@@ -85,7 +85,7 @@ void task_init(void) {
     task_list_head = NULL;
     next_task_id = 0;
     scheduler_started = 0;
-    print("Task system initialized\n");
+    debug_print("Task system initialized\n");
 }
 
 // Create a new task
