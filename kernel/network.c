@@ -37,28 +37,32 @@ int parse_url(const char* url_str, url_t* url) {
     const char* slash = strchr(p, '/');
     const char* colon = strchr(p, ':');
     
-    // Determine end of hostname
-    const char* host_end = slash ? slash : (p + strlen(p));
-    if (colon && colon < host_end) {
-        host_end = colon;
-    }
-    
-    // Copy hostname
-    size_t host_len = host_end - p;
-    if (host_len >= sizeof(url->host)) {
-        host_len = sizeof(url->host) - 1;
-    }
-    strncpy(url->host, p, host_len);
-    url->host[host_len] = '\0';
-    
-    // Parse port if present
-    if (colon && colon < (slash ? slash : (p + strlen(p)))) {
-        url->port = 0;
+    // Determine end of hostname (authority section)
+    const char* end_of_authority = slash ? slash : (p + strlen(p));
+    if (colon && colon < end_of_authority) {
+        // Port is present
+        size_t host_len = colon - p;
+        if (host_len >= sizeof(url->host)) {
+            host_len = sizeof(url->host) - 1;
+        }
+        strncpy(url->host, p, host_len);
+        url->host[host_len] = '\0';
+        
+        // Parse port
         p = colon + 1;
+        url->port = 0;
         while (*p >= '0' && *p <= '9' && *p != '/') {
             url->port = url->port * 10 + (*p - '0');
             p++;
         }
+    } else {
+        // No port, just hostname
+        size_t host_len = end_of_authority - p;
+        if (host_len >= sizeof(url->host)) {
+            host_len = sizeof(url->host) - 1;
+        }
+        strncpy(url->host, p, host_len);
+        url->host[host_len] = '\0';
     }
     
     // Parse path
