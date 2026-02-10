@@ -6,6 +6,7 @@
 #include "process.h"
 #include "ipc.h"
 #include "task.h"
+#include "shm.h"
 
 // Helper function to validate pointer is accessible
 // For now, we just check it's not NULL and is aligned
@@ -150,6 +151,47 @@ void syscall_handler(REGISTERS *regs) {
             // Try to dequeue a message (non-blocking)
             int result = message_queue_dequeue(&current->inbox, msg);
             regs->eax = result;  // 0 if message received, -1 if no message
+            break;
+        }
+        
+        case SYS_SHM_CREATE: {
+            // SYS_SHM_CREATE: Create a shared memory region
+            // EBX = size in bytes
+            uint32 size = regs->ebx;
+            
+            // Create the shared memory region
+            uint32 shm_id = shm_create(size);
+            regs->eax = shm_id;  // Return shared memory ID, or 0 on failure
+            break;
+        }
+        
+        case SYS_SHM_MAP: {
+            // SYS_SHM_MAP: Map a shared memory region
+            // EBX = shared memory ID
+            // ECX = pointer to store virtual address
+            uint32 shm_id = regs->ebx;
+            void** vaddr_out = (void**)regs->ecx;
+            
+            // Validate output pointer
+            if (!is_valid_pointer(vaddr_out, sizeof(void*))) {
+                regs->eax = -1;  // Invalid pointer
+                break;
+            }
+            
+            // Map the shared memory region
+            int result = shm_map(shm_id, vaddr_out);
+            regs->eax = result;  // 0 on success, -1 on failure
+            break;
+        }
+        
+        case SYS_SHM_UNMAP: {
+            // SYS_SHM_UNMAP: Unmap a shared memory region
+            // EBX = shared memory ID
+            uint32 shm_id = regs->ebx;
+            
+            // Unmap the shared memory region
+            int result = shm_unmap(shm_id);
+            regs->eax = result;  // 0 on success, -1 on failure
             break;
         }
         
