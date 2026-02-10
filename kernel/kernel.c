@@ -5,6 +5,7 @@
 #include "idt.h"
 #include "isr.h"
 #include "memory.h"
+#include "multiboot.h"
 #include "mouse.h"
 #include "video.h"
 #include "keyboard.h"
@@ -49,7 +50,7 @@ static inline void halt_cpu() {
     asm volatile("hlt");
 }
 
-void kmain() {
+void kmain(uint32 magic, multiboot_info_t *mbi) {
     gdt_init();
     idt_init();
     
@@ -59,7 +60,15 @@ void kmain() {
     // Now it's safe to enable interrupts
     asm volatile("sti");
     
-    memory_init();
+    // Verify multiboot magic
+    if (magic != MULTIBOOT_MAGIC) {
+        kernel_panic("Invalid multiboot magic number");
+    }
+    
+    memory_init(mbi);
+    paging_init();
+    paging_enable();
+    
     keyboard_init();
     // mouse_init();
     clear_screen();
