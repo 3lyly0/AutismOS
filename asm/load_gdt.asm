@@ -25,7 +25,7 @@ far_jump:
     ret
 
 tss_flush:
-    mov ax, 0x2B    ; TSS segment selector (index 5, RPL=3)
+    mov ax, 0x28    ; TSS segment selector (index 5, RPL=0)
     ltr ax
     ret
 

@@ -159,8 +159,11 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     
     // Allocate user space for the program
     uint32 prog_size = user_program_size;
-    if (prog_size == 0 || prog_size > 4096) {
-        prog_size = 4096;  // Fallback size
+    if (prog_size == 0) {
+        kernel_panic("User program size is 0");
+    }
+    if (prog_size > 4096) {
+        kernel_panic("User program too large");
     }
     void* user_code = allocate_user_memory(prog_size);
     print("Allocated user code at: 0x");
