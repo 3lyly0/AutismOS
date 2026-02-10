@@ -18,6 +18,7 @@
 #include "usermode.h"
 #include "user_program.h"
 #include "ipc.h"
+#include "shm.h"
 
 // Global tick counter for timer
 volatile uint64 g_timer_ticks = 0;
@@ -76,6 +77,10 @@ void idle_task(void) {
 #define MSG_TYPE_RESPONSE   2
 #define MSG_TYPE_RENDER     3
 #define MSG_TYPE_FRAME      4
+#define MSG_TYPE_FRAME_READY 5  // Step 6: Frame ready notification
+
+// Shared framebuffer ID (global)
+volatile uint32 g_framebuffer_shm_id = 0;
 
 // Inline syscall wrappers for kernel mode (for demonstration)
 static inline int sys_send_msg(uint32 target_pid, uint32 type, uint32 data1, uint32 data2) {
@@ -100,13 +105,42 @@ static inline int sys_poll_msg(message_t* msg) {
     return result;
 }
 
-// Browser process - simulates browser control process
+static inline uint32 sys_shm_create(uint32 size) {
+    uint32 result;
+    asm volatile("int $0x80" 
+                 : "=a"(result) 
+                 : "a"(SYS_SHM_CREATE), "b"(size));
+    return result;
+}
+
+static inline int sys_shm_map(uint32 shm_id, void** vaddr_out) {
+    int result;
+    asm volatile("int $0x80" 
+                 : "=a"(result) 
+                 : "a"(SYS_SHM_MAP), "b"(shm_id), "c"(vaddr_out));
+    return result;
+}
+
+// Browser process - simulates browser control process (Step 6 enhanced)
 volatile uint32 browser_counter = 0;
 void browser_process(void) {
-    print("[Browser Process] Started (simulates UI/control process)\n");
+    print("[Browser/UI Process] Started - Step 6\n");
     
     uint32 renderer_pid = 0;  // Renderer was created first (PID 0)
     uint32 frame_count = 0;
+    void* framebuffer_ptr = NULL;
+    
+    // Wait for framebuffer to be created by renderer
+    while (g_framebuffer_shm_id == 0) {
+        for (volatile int i = 0; i < TASK_YIELD_DELAY; i++);
+    }
+    
+    // Map the shared framebuffer
+    if (sys_shm_map(g_framebuffer_shm_id, &framebuffer_ptr) == 0) {
+        print("[Browser] Mapped shared framebuffer at: 0x");
+        print_hex((uint32)framebuffer_ptr);
+        print("\n");
+    }
     
     while (1) {
         browser_counter++;
@@ -119,9 +153,10 @@ void browser_process(void) {
         // Poll for responses from renderer
         message_t msg;
         if (sys_poll_msg(&msg) == 0) {
-            if (msg.type == MSG_TYPE_FRAME) {
+            if (msg.type == MSG_TYPE_FRAME_READY) {
                 // Received frame ready notification
-                // (In real browser, would composite to screen)
+                // In real browser, would composite framebuffer to screen
+                // For now, just acknowledge receipt
             }
         }
         
@@ -130,10 +165,46 @@ void browser_process(void) {
     }
 }
 
-// Renderer process - simulates HTML/layout renderer
+// Renderer process - simulates HTML/layout renderer (Step 6 enhanced)
 volatile uint32 renderer_counter = 0;
 void renderer_process(void) {
-    print("[Renderer Process] Started (simulates HTML/layout engine)\n");
+    print("[Renderer Process] Started - Step 6 with shared framebuffer\n");
+    
+    // Define framebuffer dimensions
+    const uint32 FB_WIDTH = 320;
+    const uint32 FB_HEIGHT = 200;
+    const uint32 FB_SIZE = FB_WIDTH * FB_HEIGHT * sizeof(uint32);
+    
+    // Create shared framebuffer
+    uint32 shm_id = sys_shm_create(FB_SIZE);
+    if (shm_id == 0) {
+        print("[Renderer] Failed to create shared framebuffer!\n");
+        while (1);
+    }
+    
+    print("[Renderer] Created shared framebuffer ID: ");
+    print_hex(shm_id);
+    print(" (");
+    print_hex(FB_WIDTH);
+    print("x");
+    print_hex(FB_HEIGHT);
+    print(")\n");
+    
+    // Share the framebuffer ID globally
+    g_framebuffer_shm_id = shm_id;
+    
+    // Map the framebuffer
+    uint32* pixels = NULL;
+    if (sys_shm_map(shm_id, (void**)&pixels) != 0) {
+        print("[Renderer] Failed to map framebuffer!\n");
+        while (1);
+    }
+    
+    print("[Renderer] Framebuffer mapped at: 0x");
+    print_hex((uint32)pixels);
+    print("\n");
+    
+    uint32 color_index = 0;
     
     while (1) {
         renderer_counter++;
@@ -143,10 +214,23 @@ void renderer_process(void) {
         if (sys_poll_msg(&msg) == 0) {
             if (msg.type == MSG_TYPE_RENDER) {
                 // Received render request
-                // Do "rendering" work (just increment counter)
+                // "Render" by filling framebuffer with a pattern
+                // Cycle through colors to show it's working
+                uint32 colors[] = {0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF};
+                uint32 color = colors[color_index % 6];
+                color_index++;
                 
-                // Send frame ready back to browser
-                sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME, msg.data1, 0);
+                // Fill a small rectangle to show activity
+                for (uint32 y = 10; y < 30; y++) {
+                    for (uint32 x = 10; x < 50; x++) {
+                        if (x < FB_WIDTH && y < FB_HEIGHT) {
+                            pixels[y * FB_WIDTH + x] = color;
+                        }
+                    }
+                }
+                
+                // Send frame ready notification back to browser
+                sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME_READY, msg.data1, shm_id);
             }
         }
         
@@ -157,9 +241,9 @@ void renderer_process(void) {
 
 // Main kernel process - handles monitoring
 void kernel_main_process(void) {
-    print("IPC and messaging initialized. Processes communicating.\n");
-    print("Browser <-> Renderer IPC demonstration running.\n");
-    print("Monitoring process execution and message passing...\n\n");
+    print("Step 6: Shared memory and framebuffer rendering initialized.\n");
+    print("Browser <-> Renderer communication with zero-copy framebuffer.\n");
+    print("Monitoring process execution and frame rendering...\n\n");
     
     uint32 last_print_tick = 0;
     while (1) {
@@ -169,6 +253,8 @@ void kernel_main_process(void) {
             print_hex(browser_counter);
             print(" Renderer:");
             print_hex(renderer_counter);
+            print(" FB_ID:");
+            print_hex(g_framebuffer_shm_id);
             print(" Ticks:");
             print_hex((uint32)g_timer_ticks);
             print("\n");
@@ -218,8 +304,12 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     tss_init(0x10, kernel_stack);
     print("TSS initialized\n");
     
-    print("\n=== Step 5: IPC, Messaging & Event-Driven Execution ===\n");
-    print("Demonstrating IPC between browser and renderer processes\n\n");
+    print("\n=== Step 6: Shared Memory, Graphics & Rendering ===\n");
+    print("Demonstrating zero-copy framebuffer rendering\n\n");
+    
+    // Initialize shared memory subsystem
+    shm_init();
+    print("Shared memory subsystem initialized\n");
     
     // Initialize task subsystem first
     task_init();
@@ -227,27 +317,27 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     // Initialize process subsystem
     process_init();
     
-    // Create processes with IPC capabilities
-    print("Creating processes with message queues...\n");
+    // Create processes with IPC and shared memory capabilities
+    print("Creating processes with IPC and shared memory...\n");
     process_t* renderer_proc = process_create(renderer_process, 0);
     print("  -> Renderer process: PID=");
     print_hex(renderer_proc->pid);
-    print(" (HTML/Layout engine)\n");
+    print(" (HTML/Layout + Framebuffer)\n");
     
     process_t* browser_proc = process_create(browser_process, 0);
     print("  -> Browser process: PID=");
     print_hex(browser_proc->pid);
-    print(" (UI/Control)\n");
+    print(" (UI/Compositor)\n");
     
     process_t* main_proc = process_create(kernel_main_process, 0);
     print("  -> Monitor process: PID=");
     print_hex(main_proc->pid);
     print(" (System monitor)\n");
     
-    print("\nNote: Each process has its own message queue.\n");
-    print("Processes communicate via kernel-mediated IPC.\n");
-    print("Browser sends RENDER requests to Renderer.\n");
-    print("Renderer sends FRAME_READY responses back.\n\n");
+    print("\nNote: Renderer creates shared framebuffer.\n");
+    print("Browser maps the same framebuffer (zero-copy).\n");
+    print("Renderer draws pixels, sends FRAME_READY event.\n");
+    print("Browser receives event and displays frame.\n\n");
     
     // Enable interrupts to start scheduling
     print("Enabling interrupts and starting process scheduling...\n\n");
