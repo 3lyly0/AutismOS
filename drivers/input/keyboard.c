@@ -5,9 +5,11 @@
 #include "isr.h"
 #include "types.h"
 #include "string.h"
+#include "ux.h"
 
 static BOOL g_caps_lock = FALSE;
 static BOOL g_shift_pressed = FALSE;
+static BOOL g_alt_pressed = FALSE;
 char g_ch = 0;
 
 char g_scan_code_chars[128] = {
@@ -67,10 +69,14 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
     g_ch = 0;
     scancode = get_scancode();
     if (scancode & 0x80) {
+        // Key released
         if (scancode == (SCAN_CODE_KEY_LEFT_SHIFT | 0x80)) {
             g_shift_pressed = FALSE;
+        } else if (scancode == (SCAN_CODE_KEY_ALT | 0x80)) {
+            g_alt_pressed = FALSE;
         }
     } else {
+        // Key pressed
         switch(scancode) {
             case SCAN_CODE_KEY_CAPS_LOCK:
                 g_caps_lock = !g_caps_lock;
@@ -78,6 +84,10 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
 
             case SCAN_CODE_KEY_LEFT_SHIFT:
                 g_shift_pressed = TRUE;
+                break;
+
+            case SCAN_CODE_KEY_ALT:
+                g_alt_pressed = TRUE;
                 break;
 
             default:
@@ -89,6 +99,11 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
                 }
                 if (g_shift_pressed) {
                     g_ch = alternate_chars(g_ch);
+                }
+                
+                // Handle Alt+Key combinations (Step 8: UX Hotkeys)
+                if (g_alt_pressed && g_ch != 0) {
+                    ux_handle_hotkey(g_ch);
                 }
                 break;
         }
