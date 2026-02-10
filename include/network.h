@@ -1,0 +1,29 @@
+#ifndef NETWORK_H
+#define NETWORK_H
+
+#include "types.h"
+
+// Network request types
+#define NET_REQUEST_HTTP_GET  1
+
+// Network response structure
+typedef struct net_response {
+    uint32 status_code;      // HTTP status code (200, 404, etc.)
+    uint32 content_length;   // Length of content
+    char* content;           // Response content (allocated)
+} net_response_t;
+
+// URL structure
+typedef struct url {
+    char protocol[16];       // "http" or "https"
+    char host[256];          // hostname
+    uint16 port;             // port number (default 80)
+    char path[256];          // path (default "/")
+} url_t;
+
+// Network functions
+void network_init(void);
+int parse_url(const char* url_str, url_t* url);
+int http_get(const char* host, const char* path, net_response_t* response);
+
+#endif
