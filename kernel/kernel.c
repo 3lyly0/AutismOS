@@ -69,25 +69,6 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     paging_init();
     paging_enable();
     
-    // Test kmalloc
-    print("\nTesting kmalloc...\n");
-    void *ptr1 = kmalloc(64);
-    print("Allocated 64 bytes at: 0x");
-    print_hex((uint32_t)ptr1);
-    print("\n");
-    
-    void *ptr2 = kmalloc(128);
-    print("Allocated 128 bytes at: 0x");
-    print_hex((uint32_t)ptr2);
-    print("\n");
-    
-    void *ptr3 = kmalloc(256);
-    print("Allocated 256 bytes at: 0x");
-    print_hex((uint32_t)ptr3);
-    print("\n");
-    
-    print("kmalloc test passed!\n\n");
-    
     keyboard_init();
     // mouse_init();
     clear_screen();
