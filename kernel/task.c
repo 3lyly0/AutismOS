@@ -4,6 +4,11 @@
 #include "kernel.h"
 #include "video.h"
 
+// Forward declaration for process functions
+typedef struct process process_t;
+extern process_t* process_get_current(void);
+extern void process_switch(process_t* next);
+
 #define TASK_STACK_SIZE 4096
 #define MAX_TASKS 32
 #define TASK_YIELD_DELAY 100000  // Busy-wait iterations before yielding
@@ -47,6 +52,12 @@ uint32 task_scheduler_tick(uint32 current_esp) {
         if (next_task == start_task) break; // Went full circle, stay on current
     }
     
+    // Check if we need to switch processes (address spaces)
+    if (next_task->process != current_task->process && next_task->process != NULL) {
+        // Switch to the next task's process (which will switch page directories)
+        process_switch((process_t*)next_task->process);
+    }
+    
     // Switch to next task
     current_task = next_task;
     current_task->state = TASK_RUNNING;
@@ -82,6 +93,7 @@ task_t* task_create(void (*entry_point)(void)) {
     memset(new_task, 0, sizeof(task_t));
     new_task->id = next_task_id++;
     new_task->state = TASK_READY;
+    new_task->process = NULL;  // Will be set by process_create if needed
     
     // Set up stack
     // Stack grows downward, so we start at the top

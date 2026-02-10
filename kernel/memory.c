@@ -19,8 +19,16 @@
 #define PAGE_WRITE      0x2
 #define PAGE_USER       0x4
 
+// Page directory structure
+struct page_directory {
+    uint32_t entries[PAGE_DIRECTORY_SIZE];
+    uint32_t* tables[PAGE_DIRECTORY_SIZE];  // Physical addresses of page tables
+} __attribute__((aligned(4096)));
+
+typedef struct page_directory page_directory_t;
+
 static uint8_t memory_bitmap[BITMAP_SIZE];
-uint32_t page_directory[PAGE_DIRECTORY_SIZE] __attribute__((aligned(4096)));
+static page_directory_t kernel_page_directory __attribute__((aligned(4096)));
 uint32_t first_page_table[PAGE_TABLE_SIZE] __attribute__((aligned(4096)));
 
 static uint32_t memory_end = 0;
@@ -128,13 +136,13 @@ void paging_init() {
     print("Initializing paging...\n");
     
     print("Page directory at: 0x");
-    print_hex((uint32_t)page_directory);
+    print_hex((uint32_t)&kernel_page_directory);
     print("\n");
     print("Page table at: 0x");
     print_hex((uint32_t)first_page_table);
     print("\n");
     
-    memset(page_directory, 0, sizeof(page_directory));
+    memset(&kernel_page_directory, 0, sizeof(kernel_page_directory));
     memset(first_page_table, 0, sizeof(first_page_table));
     
     uint32_t kernel_end_addr = (uint32_t)&__kernel_section_end;
@@ -153,7 +161,8 @@ void paging_init() {
         first_page_table[i] = phys_addr | PAGE_PRESENT | PAGE_WRITE;
     }
     
-    page_directory[0] = ((uint32_t)first_page_table) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    kernel_page_directory.entries[0] = ((uint32_t)first_page_table) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    kernel_page_directory.tables[0] = first_page_table;
     
     paging_initialized = 1;
     print("Paging structures initialized\n");
@@ -172,11 +181,81 @@ void paging_enable() {
         "or $0x80000000, %%eax\n"
         "mov %%eax, %%cr0\n"
         : 
-        : "r" (page_directory)
+        : "r" (&kernel_page_directory)
         : "eax"
     );
     
     print("Paging enabled successfully\n");
+}
+
+// Get kernel page directory
+page_directory_t* get_kernel_page_directory(void) {
+    return &kernel_page_directory;
+}
+
+// Create a new page directory for a process
+page_directory_t* create_page_directory(void) {
+    // Allocate page directory structure
+    page_directory_t* dir = (page_directory_t*)kmalloc(sizeof(page_directory_t));
+    if (!dir) {
+        return NULL;
+    }
+    
+    memset(dir, 0, sizeof(page_directory_t));
+    
+    // Copy kernel mappings from the kernel page directory
+    // This ensures kernel code is accessible from all processes
+    for (int i = 0; i < PAGE_DIRECTORY_SIZE; i++) {
+        if (kernel_page_directory.entries[i] != 0) {
+            // Copy kernel mappings (typically the first few entries for kernel space)
+            dir->entries[i] = kernel_page_directory.entries[i];
+            dir->tables[i] = kernel_page_directory.tables[i];
+        }
+    }
+    
+    return dir;
+}
+
+// Switch to a different page directory
+void switch_page_directory(page_directory_t* dir) {
+    if (!dir) {
+        kernel_panic("Attempted to switch to NULL page directory");
+    }
+    
+    // Load the new page directory into CR3
+    asm volatile(
+        "mov %0, %%cr3\n"
+        :
+        : "r" (dir)
+        : "memory"
+    );
+}
+
+// Map a page in a specific directory
+void map_page_in_directory(page_directory_t* dir, uint32_t virt_addr, uint32_t phys_addr, uint32_t flags) {
+    if (!dir) {
+        kernel_panic("Attempted to map page in NULL directory");
+    }
+    
+    uint32_t dir_index = virt_addr / (PAGE_SIZE * PAGE_TABLE_SIZE);
+    uint32_t table_index = (virt_addr / PAGE_SIZE) % PAGE_TABLE_SIZE;
+    
+    // Check if page table exists
+    if (dir->tables[dir_index] == NULL) {
+        // Allocate a new page table
+        uint32_t* new_table = (uint32_t*)kmalloc(PAGE_TABLE_SIZE * sizeof(uint32_t));
+        if (!new_table) {
+            kernel_panic("Failed to allocate page table");
+        }
+        memset(new_table, 0, PAGE_TABLE_SIZE * sizeof(uint32_t));
+        
+        // Update directory entry
+        dir->entries[dir_index] = ((uint32_t)new_table) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+        dir->tables[dir_index] = new_table;
+    }
+    
+    // Map the page in the table
+    dir->tables[dir_index][table_index] = phys_addr | flags;
 }
 
 void *kmalloc(size_t size) {
