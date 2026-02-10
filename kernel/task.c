@@ -6,6 +6,7 @@
 
 #define TASK_STACK_SIZE 4096
 #define MAX_TASKS 32
+#define TASK_YIELD_DELAY 100000  // Busy-wait iterations before yielding
 
 static task_t* current_task = NULL;
 static task_t* task_list_head = NULL;
@@ -38,13 +39,12 @@ uint32 task_scheduler_tick(uint32 current_esp) {
     
     // Get next task (round-robin)
     task_t* next_task = current_task->next;
+    task_t* start_task = current_task;
     
     // Skip blocked tasks if any (basic implementation)
-    int attempts = 0;
-    while (next_task->state != TASK_READY && next_task->state != TASK_RUNNING && attempts < MAX_TASKS) {
+    while (next_task->state != TASK_READY && next_task->state != TASK_RUNNING) {
         next_task = next_task->next;
-        attempts++;
-        if (next_task == current_task) break; // Went full circle
+        if (next_task == start_task) break; // Went full circle, stay on current
     }
     
     // Switch to next task
@@ -69,7 +69,6 @@ task_t* task_create(void (*entry_point)(void)) {
     task_t* new_task = (task_t*)kmalloc(sizeof(task_t));
     if (!new_task) {
         kernel_panic("Failed to allocate task structure");
-        return NULL;
     }
     
     // Allocate stack
@@ -77,7 +76,6 @@ task_t* task_create(void (*entry_point)(void)) {
     if (!stack) {
         kfree(new_task);
         kernel_panic("Failed to allocate task stack");
-        return NULL;
     }
     
     // Initialize task structure
@@ -120,7 +118,7 @@ task_t* task_create(void (*entry_point)(void)) {
     stack_top--;
     *stack_top = 0; // EBX
     stack_top--;
-    *stack_top = 0; // ESP (will be ignored)
+    *stack_top = 0; // ESP (ignored by popa, but maintains interrupt frame format)
     stack_top--;
     *stack_top = 0; // EBP
     stack_top--;
