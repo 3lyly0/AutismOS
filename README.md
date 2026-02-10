@@ -2,11 +2,50 @@
 
 AutismOS is a minimalistic educational operating system designed for learning low-level system programming, with a focus on bootloading, interrupts, hardware interaction, and **browser-oriented architecture**.
 
-**Latest Achievement: Step 9 - Interactive Graphics UI ✅**
+**Latest Achievement: Real Networking Stack ✅**
 
 ---
 
 ## **Current Features**
+
+### ✅ Real Networking Stack (NEW)
+
+Full implementation of a minimal TCP/IP networking stack from hardware to ICMP:
+
+#### Layer 1 - Hardware
+- **RTL8139 NIC driver** with PCI device detection
+- **Polling-based packet I/O** (no IRQ required)
+- **TX/RX buffer management**
+- **MAC address reading**
+
+#### Layer 2 - Ethernet
+- **Frame construction and parsing**
+- **EtherType handling** (ARP, IP)
+- **Local MAC address management**
+
+#### Layer 3 - ARP
+- **ARP request/reply handling**
+- **8-entry ARP cache** (fixed-size array)
+- **Automatic ARP resolution**
+
+#### Layer 4 - IP
+- **IPv4 packet construction**
+- **IP checksum calculation**
+- **Static configuration**: 10.0.2.15/24, Gateway: 10.0.2.2
+- **Next-hop routing** (local subnet vs gateway)
+
+#### Layer 5 - ICMP
+- **ICMP Echo Request (ping)**
+- **ICMP Echo Reply handling**
+- **Real ping to external IPs** (e.g., 8.8.8.8)
+- **Timeout handling** with configurable wait
+
+#### Network Configuration
+- **Static IP**: 10.0.2.15
+- **Netmask**: 255.255.255.0
+- **Gateway**: 10.0.2.2
+- No DHCP, No DNS
+- HTTP browser functionality disabled (TCP not implemented)
 
 ### ✅ Step 9: Interactive Graphics UI & In-Page Interaction (COMPLETE)
 
@@ -79,12 +118,13 @@ The transformation from technical demo to real OS:
 #### Step 7: Input, Networking & Browser Core
 - **Input delivery** via IPC (keyboard and mouse events)
 - **URL parsing** for http:// protocol
-- **HTTP/1.0 networking** (minimal GET requests)
+- **Real networking stack** (RTL8139, Ethernet, ARP, IP, ICMP)
+- **ICMP ping** to external IP addresses
 - **HTML parser** supporting html, body, h1, p, a tags
 - **Layout engine** with vertical flow (primitive but functional)
 - **Text rendering** to framebuffer with fixed-width font
 - **Browser main loop** with complete event-driven architecture
-- **Complete pipeline**: URL → Network → Parse → Layout → Render → Display
+- **Complete pipeline**: IP → Ping → Parse → Layout → Render → Display
 
 ### ✅ Previous Steps
 - **Step 5**: IPC, Messaging & Event-Driven Execution

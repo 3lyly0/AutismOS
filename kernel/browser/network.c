@@ -1,46 +1,61 @@
 #include "network.h"
 #include "string.h"
 #include "memory.h"
+#include "pci.h"
+#include "rtl8139.h"
+#include "ethernet.h"
+#include "arp.h"
+#include "ip.h"
+#include "icmp.h"
 
-// Initialize network subsystem
+extern void ethernet_set_arp_callback(void (*)(uint8*, uint16));
+extern void ethernet_set_ip_callback(void (*)(uint8*, uint16));
+extern void ip_set_icmp_callback(void (*)(uint8*, uint16, uint32));
+extern void rtl8139_set_receive_callback(void (*)(uint8*, uint16));
+
 void network_init(void) {
-    // For this minimal implementation, no initialization needed
-    // In a real system, this would initialize network stack
+    pci_init();
+    rtl8139_init();
+    ethernet_init();
+    arp_init();
+    ip_init();
+    icmp_init();
+    
+    rtl8139_set_receive_callback(ethernet_receive);
+    ethernet_set_arp_callback(arp_receive);
+    ethernet_set_ip_callback(ip_receive);
+    ip_set_icmp_callback(icmp_receive);
+    
+    uint32 local_ip = (10 << 0) | (0 << 8) | (2 << 16) | (15 << 24);
+    uint32 netmask = (255 << 0) | (255 << 8) | (255 << 16) | (0 << 24);
+    uint32 gateway = (10 << 0) | (0 << 8) | (2 << 16) | (2 << 24);
+    
+    ip_set_config(local_ip, netmask, gateway);
+    arp_set_ip(local_ip);
 }
 
-// Parse a URL string into components
-// Returns: 0 on success, -1 on failure
 int parse_url(const char* url_str, url_t* url) {
     if (!url_str || !url) {
         return -1;
     }
     
-    // Initialize URL structure
     memset(url, 0, sizeof(url_t));
-    url->port = 80;  // Default HTTP port
-    
-    // Simple parser for http:// URLs
-    // Format: http://hostname[:port]/path
+    url->port = 80;
     
     const char* p = url_str;
     
-    // Check for http:// prefix
     if (strncmp(p, "http://", 7) == 0) {
         strcpy(url->protocol, "http");
         p += 7;
     } else {
-        // Default to http
         strcpy(url->protocol, "http");
     }
     
-    // Parse hostname
     const char* slash = strchr(p, '/');
     const char* colon = strchr(p, ':');
     
-    // Determine end of hostname (authority section)
     const char* end_of_authority = slash ? slash : (p + strlen(p));
     if (colon && colon < end_of_authority) {
-        // Port is present
         size_t host_len = colon - p;
         if (host_len >= sizeof(url->host)) {
             host_len = sizeof(url->host) - 1;
@@ -48,7 +63,6 @@ int parse_url(const char* url_str, url_t* url) {
         strncpy(url->host, p, host_len);
         url->host[host_len] = '\0';
         
-        // Parse port
         p = colon + 1;
         url->port = 0;
         while (*p >= '0' && *p <= '9' && *p != '/') {
@@ -56,7 +70,6 @@ int parse_url(const char* url_str, url_t* url) {
             p++;
         }
     } else {
-        // No port, just hostname
         size_t host_len = end_of_authority - p;
         if (host_len >= sizeof(url->host)) {
             host_len = sizeof(url->host) - 1;
@@ -65,7 +78,6 @@ int parse_url(const char* url_str, url_t* url) {
         url->host[host_len] = '\0';
     }
     
-    // Parse path
     if (slash) {
         strncpy(url->path, slash, sizeof(url->path) - 1);
         url->path[sizeof(url->path) - 1] = '\0';
@@ -76,47 +88,13 @@ int parse_url(const char* url_str, url_t* url) {
     return 0;
 }
 
-// Perform HTTP GET request (minimal, blocking implementation)
-// Returns: 0 on success, -1 on failure
 int http_get(const char* host, const char* path, net_response_t* response) {
-    if (!host || !path || !response) {
-        return -1;
-    }
-    
-    // For this minimal implementation, we simulate a simple response
-    // In a real system, this would:
-    // 1. Open TCP connection to host:80
-    // 2. Send HTTP GET request
-    // 3. Parse HTTP response headers
-    // 4. Read response body
-    
-    // Simulate a simple HTML response
-    const char* mock_html = 
-        "<html>"
-        "<body>"
-        "<h1>Welcome to AutismOS Browser</h1>"
-        "<p>This is a minimal browser-capable operating system.</p>"
-        "<p>Step 7: Input, Networking and Browser Core</p>"
-        "</body>"
-        "</html>";
-    
-    // Allocate response content
-    size_t content_len = strlen(mock_html);
-    response->content = (char*)kmalloc(content_len + 1);
-    if (!response->content) {
-        return -1;
-    }
-    
-    // Copy mock content
-    strcpy(response->content, mock_html);
-    response->content_length = content_len;
-    response->status_code = 200;  // HTTP OK
-    
-    return 0;
+    (void)host;
+    (void)path;
+    (void)response;
+    return -1;
 }
 
-// Validate IP address format (simple check)
-// Returns: 1 if valid, 0 if invalid
 static int is_valid_ip(const char* ip) {
     if (!ip) return 0;
     
@@ -126,61 +104,75 @@ static int is_valid_ip(const char* ip) {
     
     for (const char* p = ip; *p; p++) {
         if (*p >= '0' && *p <= '9') {
-            if (digits >= 3) return 0;  // Too many digits in octet
+            if (digits >= 3) return 0;
             
-            // Check for overflow before accumulating
             int new_value = value * 10 + (*p - '0');
-            if (new_value > 255) return 0;  // Octet would be too large
+            if (new_value > 255) return 0;
             
             digits++;
             value = new_value;
         } else if (*p == '.') {
-            if (digits == 0) return 0;  // Empty octet
+            if (digits == 0) return 0;
             dots++;
             digits = 0;
             value = 0;
         } else {
-            return 0;  // Invalid character
+            return 0;
         }
     }
     
-    // Should have exactly 3 dots and at least one digit in last octet
     return (dots == 3 && digits > 0);
 }
 
-// Perform ICMP ping to an IP address (minimal implementation)
-// Returns: 0 on success, -1 on failure
+static uint32 parse_ip_string(const char* ip_str) {
+    uint32 ip = 0;
+    uint8 octets[4] = {0};
+    int octet_idx = 0;
+    int value = 0;
+    
+    for (const char* p = ip_str; *p && octet_idx < 4; p++) {
+        if (*p >= '0' && *p <= '9') {
+            value = value * 10 + (*p - '0');
+        } else if (*p == '.') {
+            octets[octet_idx++] = value;
+            value = 0;
+        }
+    }
+    if (octet_idx == 3) {
+        octets[3] = value;
+    }
+    
+    ip = (octets[0] << 0) | (octets[1] << 8) | (octets[2] << 16) | (octets[3] << 24);
+    return ip;
+}
+
 int ping_ip(const char* ip_address, ping_response_t* response) {
     if (!ip_address || !response) {
         return -1;
     }
     
-    // Initialize response
     memset(response, 0, sizeof(ping_response_t));
     
-    // Validate IP address format
     if (!is_valid_ip(ip_address)) {
         response->success = 0;
         strncpy(response->message, "Invalid IP address format", sizeof(response->message) - 1);
-        response->message[sizeof(response->message) - 1] = '\0';
         return -1;
     }
     
-    // Copy IP address to response
     strncpy(response->ip_address, ip_address, sizeof(response->ip_address) - 1);
-    response->ip_address[sizeof(response->ip_address) - 1] = '\0';
     
-    // For this minimal implementation, we simulate a ping
-    // In a real system, this would:
-    // 1. Create ICMP echo request packet
-    // 2. Send packet to IP address
-    // 3. Wait for ICMP echo reply
-    // 4. Calculate round-trip time
+    uint32 dst_ip = parse_ip_string(ip_address);
     
-    // Simulate successful ping
-    response->success = 1;
-    strncpy(response->message, "Ping successful - Host is reachable", sizeof(response->message) - 1);
-    response->message[sizeof(response->message) - 1] = '\0';
+    icmp_send_echo_request(dst_ip, 1, 1);
+    
+    uint32 src_ip = 0;
+    if (icmp_wait_reply(&src_ip, 1000) == 0) {
+        response->success = 1;
+        strncpy(response->message, "Ping successful - Host is reachable", sizeof(response->message) - 1);
+    } else {
+        response->success = 0;
+        strncpy(response->message, "Ping failed - No reply received", sizeof(response->message) - 1);
+    }
     
     return 0;
 }
