@@ -24,7 +24,7 @@ typedef struct url {
 // Ping response structure
 typedef struct ping_response {
     uint8 success;           // 1 if ping succeeded, 0 if failed
-    char ip_address[16];     // IP address that was pinged
+    char ip_address[17];     // IP address that was pinged (max 15 chars + null terminator + 1 for safety)
     char message[256];       // Status message
 } ping_response_t;
 
