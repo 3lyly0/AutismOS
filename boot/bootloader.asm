@@ -43,7 +43,6 @@ section .text
 _start:
     mov esp, stack_top
     extern kmain
-    mov eax, BOOTLOADER_MAGIC
     push ebx
     push eax
     call kmain
