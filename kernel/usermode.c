@@ -39,20 +39,16 @@ void* allocate_user_memory(uint32 size) {
         kernel_panic("User space exhausted");
     }
     
-    // Map pages as user-accessible
-    extern uint32_t first_page_table[];
+    // Map pages as user-accessible using kernel page directory
+    page_directory_t* kernel_dir = get_kernel_page_directory();
     
     // Allocate and map the pages with user permissions
     uint32 start_addr = (uint32)result;
     uint32 end_addr = (uint32)user_heap_current;
     
     for (uint32 addr = start_addr; addr < end_addr; addr += 0x1000) {
-        uint32 page_index = addr / 0x1000;
-        if (page_index < 1024) {
-            // Map to physical address (identity mapping for now)
-            // Set as present, writable, and user-accessible
-            first_page_table[page_index] = addr | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-        }
+        // Map to physical address (identity mapping for now)
+        map_page_in_directory(kernel_dir, addr, addr, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
     }
     
     // Flush TLB for the affected pages

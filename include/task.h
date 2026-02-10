@@ -17,6 +17,7 @@ typedef struct task {
     uint32 eip;       // Instruction pointer
     uint32 id;        // Task ID
     task_state_t state;
+    void* process;    // Pointer to parent process (opaque to avoid circular dependency)
     struct task* next; // Next task in circular list
 } task_t;
 
