@@ -205,11 +205,11 @@ page_directory_t* create_page_directory(void) {
     
     // Copy kernel mappings from the kernel page directory
     // This ensures kernel code is accessible from all processes
-    for (int i = 0; i < PAGE_DIRECTORY_SIZE; i++) {
-        if (kernel_page_directory.entries[i] != 0) {
+    for (int dir_index = 0; dir_index < PAGE_DIRECTORY_SIZE; dir_index++) {
+        if (kernel_page_directory.entries[dir_index] != 0) {
             // Copy kernel mappings (typically the first few entries for kernel space)
-            dir->entries[i] = kernel_page_directory.entries[i];
-            dir->tables[i] = kernel_page_directory.tables[i];
+            dir->entries[dir_index] = kernel_page_directory.entries[dir_index];
+            dir->tables[dir_index] = kernel_page_directory.tables[dir_index];
         }
     }
     
@@ -241,7 +241,14 @@ void map_page_in_directory(page_directory_t* dir, uint32_t virt_addr, uint32_t p
     uint32_t table_index = (virt_addr / PAGE_SIZE) % PAGE_TABLE_SIZE;
     
     // Check if page table exists
+    // Invariant: dir->tables[dir_index] and dir->entries[dir_index] should be consistent
+    // Either both NULL/zero or both set
     if (dir->tables[dir_index] == NULL) {
+        // Verify consistency - entry should also be empty
+        if (dir->entries[dir_index] != 0) {
+            kernel_panic("Page directory inconsistent: entry set but table NULL");
+        }
+        
         // Allocate a new page table
         uint32_t* new_table = (uint32_t*)kmalloc(PAGE_TABLE_SIZE * sizeof(uint32_t));
         if (!new_table) {

@@ -64,7 +64,8 @@ uint32 task_scheduler_tick(uint32 current_esp) {
     // Check if we need to switch processes (address spaces)
     // NOTE: For Step 4, we're keeping all processes in the same address space
     // but the infrastructure is ready for per-process page directories
-    if (next_task->process != current_task->process && next_task->process != NULL) {
+    if (next_task->process != NULL && current_task->process != NULL &&
+        next_task->process != current_task->process) {
         // Would switch to the next task's process here
         // process_switch((process_t*)next_task->process);
         // For now, we just track that we would switch but don't actually change CR3
