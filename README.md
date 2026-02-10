@@ -1,6 +1,28 @@
 # AutismOS
 
-AutismOS is a minimalistic educational operating system designed for learning low-level system programming, with a focus on bootloading, interrupts, and hardware interaction.
+AutismOS is a minimalistic educational operating system designed for learning low-level system programming, with a focus on bootloading, interrupts, hardware interaction, and **browser-oriented architecture**.
+
+**Latest Achievement: Step 5 - IPC, Messaging & Event-Driven Execution ✅**
+
+---
+
+## **Current Features**
+
+### ✅ Step 5: IPC & Messaging (COMPLETE)
+- **Kernel-mediated message passing** between isolated processes
+- **Event-driven execution model** (browser architecture foundation)
+- **3 IPC syscalls**: SYS_SEND, SYS_RECV, SYS_POLL
+- **Browser-Renderer demo**: Multiple processes communicating safely
+- **Security**: Pointer validation, no shared memory
+- **Per-process message queues** (16 messages each)
+
+### ✅ Previous Steps
+- Process abstraction with separate address spaces
+- Task scheduling and context switching
+- Memory management with paging
+- Interrupt handling (IRQ, exceptions)
+- Basic syscall interface
+- Bootloader and kernel initialization
 
 ---
 
@@ -74,6 +96,34 @@ If you make changes to the source code, follow these steps to rebuild and run th
    ```bash
    qemu-system-x86_64 -cdrom autismos.iso -device isa-debug-exit,iobase=0x8900,iosize=0x04
    ```
+
+---
+
+### **What You'll See**
+
+When you run AutismOS, you'll see:
+- System initialization and memory setup
+- **Step 5 Demo**: Browser and Renderer processes communicating via IPC
+- Real-time counters showing message passing
+- Three isolated processes with separate page directories
+
+Example output:
+```
+=== Step 5: IPC, Messaging & Event-Driven Execution ===
+Process created: PID=0 (Renderer - HTML/Layout engine)
+Process created: PID=1 (Browser - UI/Control)
+Process created: PID=2 (Monitor - System monitor)
+
+Browser <-> Renderer IPC demonstration running.
+Browser:0x490 Renderer:0x42D Ticks:0x15
+```
+
+---
+
+### **Documentation**
+
+- **`STEP5_IPC.md`**: Detailed IPC implementation guide
+- **`IMPLEMENTATION_SUMMARY.md`**: Complete feature summary
 
 ---
 
