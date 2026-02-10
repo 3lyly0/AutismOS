@@ -85,11 +85,11 @@ html_node_t* html_parse(const char* html_string) {
                 // Extract text content for h1 and p tags
                 if (elem->tag == TAG_H1 || elem->tag == TAG_P) {
                     char text[256];
-                    i = 0;
-                    while (*p && *p != '<' && i < 255) {
-                        text[i++] = *p++;
+                    int text_len = 0;
+                    while (*p && *p != '<' && text_len < 255) {
+                        text[text_len++] = *p++;
                     }
-                    text[i] = '\0';
+                    text[text_len] = '\0';
                     strncpy(elem->text, text, sizeof(elem->text) - 1);
                 }
             }

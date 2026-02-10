@@ -138,8 +138,13 @@ void browser_process(void) {
     void* framebuffer_ptr = NULL;
     
     // Wait for framebuffer to be created by renderer
+    uint32 wait_count = 0;
     while (g_framebuffer_shm_id == 0) {
-        for (volatile int i = 0; i < TASK_YIELD_DELAY; i++);
+        // Yield to other processes instead of busy waiting
+        if (wait_count++ > 5) {
+            for (volatile int i = 0; i < TASK_YIELD_DELAY; i++);
+            wait_count = 0;
+        }
     }
     
     // Map the shared framebuffer
