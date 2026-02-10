@@ -126,10 +126,10 @@ static int is_valid_ip(const char* ip) {
     
     for (const char* p = ip; *p; p++) {
         if (*p >= '0' && *p <= '9') {
+            if (digits >= 3) return 0;  // Too many digits in octet
             digits++;
             value = value * 10 + (*p - '0');
             if (value > 255) return 0;  // Octet too large
-            if (digits > 3) return 0;   // Too many digits in octet
         } else if (*p == '.') {
             if (digits == 0) return 0;  // Empty octet
             dots++;
@@ -157,7 +157,8 @@ int ping_ip(const char* ip_address, ping_response_t* response) {
     // Validate IP address format
     if (!is_valid_ip(ip_address)) {
         response->success = 0;
-        strcpy(response->message, "Invalid IP address format");
+        strncpy(response->message, "Invalid IP address format", sizeof(response->message) - 1);
+        response->message[sizeof(response->message) - 1] = '\0';
         return -1;
     }
     
@@ -174,7 +175,8 @@ int ping_ip(const char* ip_address, ping_response_t* response) {
     
     // Simulate successful ping
     response->success = 1;
-    strcpy(response->message, "Ping successful - Host is reachable");
+    strncpy(response->message, "Ping successful - Host is reachable", sizeof(response->message) - 1);
+    response->message[sizeof(response->message) - 1] = '\0';
     
     return 0;
 }
