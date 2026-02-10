@@ -13,6 +13,9 @@
 #include "disk.h"
 #include "sound.h"
 #include "task.h"
+#include "syscall.h"
+#include "usermode.h"
+#include "user_program.h"
 
 // Global tick counter for timer
 volatile uint64 g_timer_ticks = 0;
@@ -120,7 +123,7 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     // Register timer interrupt handler (IRQ0 = interrupt 32)
     isr_register_interrupt_handler(IRQ_BASE + IRQ0_TIMER, timer_interrupt_handler);
     
-    // Don't enable interrupts yet - wait until tasks are set up
+    // Don't enable interrupts yet - wait until ready
     
     // Verify multiboot magic
     if (magic != MULTIBOOT_MAGIC) {
@@ -135,34 +138,61 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     // mouse_init();
     clear_screen();
     print("Welcome to AutismOS!\n");
+    print("===================\n\n");
     beep();
     
-    // Initialize task system
-    print("Initializing multitasking...\n");
-    task_init();
+    // Initialize syscall subsystem
+    syscall_init();
     
-    // Create kernel tasks
-    print("Creating idle task...\n");
-    task_create(idle_task);
+    // Initialize user mode subsystem
+    usermode_init();
     
-    print("Creating test task 1...\n");
-    task_create(test_task_1);
+    // Set up TSS for privilege level changes
+    // We'll use a simple kernel stack
+    uint32 kernel_stack;
+    asm volatile("mov %%esp, %0" : "=r"(kernel_stack));
+    tss_init(0x10, kernel_stack);
+    print("TSS initialized\n");
     
-    print("Creating test task 2...\n");
-    task_create(test_task_2);
+    print("\n=== Step 3: User Mode & System Calls ===\n");
+    print("Testing privilege separation (Ring 0 -> Ring 3)\n\n");
     
-    print("Creating kernel main task...\n");
-    task_create(kernel_main_task);
+    // Allocate user space for the program
+    uint32 prog_size = user_program_size;
+    if (prog_size == 0) {
+        kernel_panic("User program size is 0");
+    }
+    if (prog_size > 4096) {
+        kernel_panic("User program too large");
+    }
+    void* user_code = allocate_user_memory(prog_size);
+    print("Allocated user code at: 0x");
+    print_hex((uint32)user_code);
+    print("\n");
     
-    print("Starting multitasking...\n\n");
+    // Copy user program to user space
+    memcpy(user_code, user_program_code, prog_size);
+    print("User program copied to user space (");
+    print_hex(prog_size);
+    print(" bytes)\n");
     
-    // Now enable interrupts and enter idle loop
-    // The scheduler will switch to the tasks we created
+    // Allocate user stack
+    void* user_stack_bottom = allocate_user_memory(4096);  // 4KB stack
+    uint32 user_stack_top = (uint32)user_stack_bottom + 4096;
+    print("User stack allocated: 0x");
+    print_hex((uint32)user_stack_bottom);
+    print(" - 0x");
+    print_hex(user_stack_top);
+    print("\n\n");
+    
+    // Enable interrupts before switching to user mode
     asm volatile("sti");
     
-    // Main kernel thread becomes the idle loop
-    while (1) {
-        halt_cpu();
-    }
+    // Switch to user mode and execute user program
+    // This should never return
+    switch_to_user_mode((uint32)user_code, user_stack_top);
+    
+    // Should never reach here
+    kernel_panic("Returned from user mode");
 }
 
