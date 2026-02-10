@@ -79,73 +79,82 @@ $(BUILD)/user_program_asm.o : $(ASM)/user_program.asm
 
 
 
-$(BUILD)/kernel.o : $(KERNEL)/kernel.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/kernel.c -o $(BUILD)/kernel.o
+# Kernel core files
+$(BUILD)/kernel.o : $(KERNEL)/core/kernel.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/kernel.c -o $(BUILD)/kernel.o
 
-$(BUILD)/io_ports.o : $(KERNEL)/io_ports.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/io_ports.c -o $(BUILD)/io_ports.o
+$(BUILD)/memory.o : $(KERNEL)/core/memory.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/memory.c -o $(BUILD)/memory.o
 
-$(BUILD)/gdt.o : $(KERNEL)/gdt.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/gdt.c -o $(BUILD)/gdt.o
+$(BUILD)/task.o : $(KERNEL)/core/task.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/task.c -o $(BUILD)/task.o
 
-$(BUILD)/idt.o : $(KERNEL)/idt.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/idt.c -o $(BUILD)/idt.o
+$(BUILD)/process.o : $(KERNEL)/core/process.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/process.c -o $(BUILD)/process.o
 
-$(BUILD)/isr.o : $(KERNEL)/isr.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/isr.c -o $(BUILD)/isr.o
+# Kernel architecture files
+$(BUILD)/io_ports.o : $(KERNEL)/arch/io_ports.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/io_ports.c -o $(BUILD)/io_ports.o
 
-$(BUILD)/8259_pic.o : $(KERNEL)/8259_pic.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/8259_pic.c -o $(BUILD)/8259_pic.o
+$(BUILD)/gdt.o : $(KERNEL)/arch/gdt.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/gdt.c -o $(BUILD)/gdt.o
 
-$(BUILD)/memory.o : $(KERNEL)/memory.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/memory.c -o $(BUILD)/memory.o
+$(BUILD)/idt.o : $(KERNEL)/arch/idt.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/idt.c -o $(BUILD)/idt.o
 
-$(BUILD)/task.o : $(KERNEL)/task.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/task.c -o $(BUILD)/task.o
+$(BUILD)/isr.o : $(KERNEL)/arch/isr.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/isr.c -o $(BUILD)/isr.o
 
-$(BUILD)/process.o : $(KERNEL)/process.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/process.c -o $(BUILD)/process.o
+$(BUILD)/8259_pic.o : $(KERNEL)/arch/8259_pic.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/8259_pic.c -o $(BUILD)/8259_pic.o
 
-$(BUILD)/ipc.o : $(KERNEL)/ipc.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/ipc.c -o $(BUILD)/ipc.o
+# Kernel IPC files
+$(BUILD)/ipc.o : $(KERNEL)/ipc/ipc.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/ipc/ipc.c -o $(BUILD)/ipc.o
 
-$(BUILD)/shm.o : $(KERNEL)/shm.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/shm.c -o $(BUILD)/shm.o
+$(BUILD)/shm.o : $(KERNEL)/ipc/shm.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/ipc/shm.c -o $(BUILD)/shm.o
 
-$(BUILD)/input.o : $(KERNEL)/input.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/input.c -o $(BUILD)/input.o
+# Kernel syscall files
+$(BUILD)/syscall_c.o : $(KERNEL)/syscall/syscall.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/syscall/syscall.c -o $(BUILD)/syscall_c.o
 
-$(BUILD)/network.o : $(KERNEL)/network.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/network.c -o $(BUILD)/network.o
+$(BUILD)/usermode.o : $(KERNEL)/syscall/usermode.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/syscall/usermode.c -o $(BUILD)/usermode.o
 
-$(BUILD)/html.o : $(KERNEL)/html.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/html.c -o $(BUILD)/html.o
+# Kernel browser files
+$(BUILD)/network.o : $(KERNEL)/browser/network.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/network.c -o $(BUILD)/network.o
 
-$(BUILD)/layout.o : $(KERNEL)/layout.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/layout.c -o $(BUILD)/layout.o
+$(BUILD)/html.o : $(KERNEL)/browser/html.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/html.c -o $(BUILD)/html.o
 
-$(BUILD)/video.o : $(KERNEL)/video.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/video.c -o $(BUILD)/video.o
-
-$(BUILD)/syscall_c.o : $(KERNEL)/syscall.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/syscall.c -o $(BUILD)/syscall_c.o
-
-$(BUILD)/usermode.o : $(KERNEL)/usermode.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/usermode.c -o $(BUILD)/usermode.o
-
+$(BUILD)/layout.o : $(KERNEL)/browser/layout.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/layout.c -o $(BUILD)/layout.o
 
 
-$(BUILD)/keyboard.o : $(DRIVERS)/keyboard.c
-	$(CC) $(CC_FLAGS) -c $(DRIVERS)/keyboard.c -o $(BUILD)/keyboard.o
 
-$(BUILD)/mouse.o : $(DRIVERS)/mouse.c
-	$(CC) $(CC_FLAGS) -c $(DRIVERS)/mouse.c -o $(BUILD)/mouse.o
+# Input drivers
+$(BUILD)/keyboard.o : $(DRIVERS)/input/keyboard.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/keyboard.c -o $(BUILD)/keyboard.o
 
-$(BUILD)/disk.o : $(DRIVERS)/disk.c
-	$(CC) $(CC_FLAGS) -c $(DRIVERS)/disk.c -o $(BUILD)/disk.o
+$(BUILD)/mouse.o : $(DRIVERS)/input/mouse.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/mouse.c -o $(BUILD)/mouse.o
 
-$(BUILD)/sound.o : $(DRIVERS)/sound.c
-	$(CC) $(CC_FLAGS) -c $(DRIVERS)/sound.c -o $(BUILD)/sound.o
+$(BUILD)/input.o : $(DRIVERS)/input/input.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/input.c -o $(BUILD)/input.o
+
+# Video drivers
+$(BUILD)/video.o : $(DRIVERS)/video/video.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/video.c -o $(BUILD)/video.o
+
+# Storage drivers
+$(BUILD)/disk.o : $(DRIVERS)/storage/disk.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/storage/disk.c -o $(BUILD)/disk.o
+
+# Audio drivers
+$(BUILD)/sound.o : $(DRIVERS)/audio/sound.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/audio/sound.c -o $(BUILD)/sound.o
 
 
 
