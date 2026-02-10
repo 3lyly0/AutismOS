@@ -31,7 +31,7 @@ ISO_DIR=isodir
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o\
-		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/kernel.o\
+		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/kernel.o\
 		$(BUILD)/video.o $(BUILD)/disk.o $(BUILD)/sound.o
 
 
@@ -69,6 +69,8 @@ $(BUILD)/irq.o : $(ASM)/irq.asm
 
 
 
+
+
 $(BUILD)/kernel.o : $(KERNEL)/kernel.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/kernel.c -o $(BUILD)/kernel.o
 
@@ -89,6 +91,9 @@ $(BUILD)/8259_pic.o : $(KERNEL)/8259_pic.c
 
 $(BUILD)/memory.o : $(KERNEL)/memory.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/memory.c -o $(BUILD)/memory.o
+
+$(BUILD)/task.o : $(KERNEL)/task.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/task.c -o $(BUILD)/task.o
 
 $(BUILD)/video.o : $(KERNEL)/video.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/video.c -o $(BUILD)/video.o
