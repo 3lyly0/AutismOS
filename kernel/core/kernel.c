@@ -94,6 +94,9 @@ void idle_task(void) {
 // Shared framebuffer ID (global)
 volatile uint32 g_framebuffer_shm_id = 0;
 
+// Global ping response (shared between renderer and browser)
+volatile ping_response_t g_ping_response;
+
 // Inline syscall wrappers for kernel mode (for demonstration)
 static inline int sys_send_msg(uint32 target_pid, uint32 type, uint32 data1, uint32 data2) {
     message_t msg;
@@ -202,9 +205,22 @@ void browser_process(void) {
                 if (!browser_page_loaded && browser_url_submitted) {
                     // Show ping result in content area
                     graphics_clear_region(2, 14, 76, 9, COLOR_BLACK);
-                    draw_text(3, 15, "Ping completed!", COLOR_LIGHT_GREEN);
+                    
+                    // Display ping status with appropriate color
+                    if (g_ping_response.success) {
+                        draw_text(3, 15, "Ping successful!", COLOR_LIGHT_GREEN);
+                    } else {
+                        draw_text(3, 15, "Ping failed!", COLOR_LIGHT_RED);
+                    }
+                    
+                    // Display IP address
                     draw_text(3, 17, "IP: ", COLOR_WHITE);
                     draw_text(8, 17, last_submitted_ip, COLOR_YELLOW);
+                    
+                    // Display the actual ping response message (ensure null-terminated)
+                    g_ping_response.message[sizeof(g_ping_response.message) - 1] = '\0';
+                    draw_text(3, 19, "Message: ", COLOR_WHITE);
+                    draw_text(13, 19, (const char*)g_ping_response.message, COLOR_LIGHT_GRAY);
                     
                     browser_page_loaded = 1;
                     
@@ -313,6 +329,9 @@ void renderer_process(void) {
                         print("\n");
                     }
                 }
+                
+                // Store ping response in global variable for browser to read
+                g_ping_response = ping_resp;
                 
                 // Send frame ready notification
                 sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME_READY, 0, shm_id);
