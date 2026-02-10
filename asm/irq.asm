@@ -48,10 +48,10 @@ irq_0_with_task_switch:
     mov gs, ax
 
     ; Call scheduler tick - it will handle task switching
-    ; and return the ESP to use
+    ; and return the ESP to use (possibly from a different task)
     push esp
     call task_scheduler_tick
-    mov esp, eax        ; ESP returned might be different (task switched)
+    mov esp, eax        ; Switch to returned ESP (may be same or different task)
 
     ; Restore registers from (potentially new) stack
     pop ebx
