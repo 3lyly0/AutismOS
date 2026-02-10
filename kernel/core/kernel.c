@@ -71,6 +71,7 @@ static inline void halt_cpu() {
 // Idle task - runs when no other task is ready
 void idle_task(void) {
     while (1) {
+        rtl8139_poll_receive();
         halt_cpu();
     }
 }
