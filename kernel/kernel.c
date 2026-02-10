@@ -19,6 +19,10 @@
 #include "user_program.h"
 #include "ipc.h"
 #include "shm.h"
+#include "input.h"
+#include "network.h"
+#include "html.h"
+#include "layout.h"
 
 // Global tick counter for timer
 volatile uint64 g_timer_ticks = 0;
@@ -73,11 +77,14 @@ void idle_task(void) {
 #define TASK_YIELD_DELAY 100000
 
 // Message types for IPC demonstration
-#define MSG_TYPE_REQUEST    1
-#define MSG_TYPE_RESPONSE   2
-#define MSG_TYPE_RENDER     3
-#define MSG_TYPE_FRAME      4
-#define MSG_TYPE_FRAME_READY 5  // Step 6: Frame ready notification
+#define MSG_TYPE_REQUEST      1
+#define MSG_TYPE_RESPONSE     2
+#define MSG_TYPE_RENDER       3
+#define MSG_TYPE_FRAME        4
+#define MSG_TYPE_FRAME_READY  5  // Step 6: Frame ready notification
+#define MSG_TYPE_URL_REQUEST  6  // Step 7: URL request
+#define MSG_TYPE_URL_RESPONSE 7  // Step 7: URL response
+#define MSG_TYPE_LAYOUT_DONE  8  // Step 7: Layout complete
 
 // Shared framebuffer ID (global)
 volatile uint32 g_framebuffer_shm_id = 0;
@@ -121,13 +128,13 @@ static inline int sys_shm_map(uint32 shm_id, void** vaddr_out) {
     return result;
 }
 
-// Browser process - simulates browser control process (Step 6 enhanced)
+// Browser process - Full browser with networking and rendering (Step 7)
 volatile uint32 browser_counter = 0;
+volatile uint32 browser_page_loaded = 0;
 void browser_process(void) {
-    print("[Browser/UI Process] Started - Step 6\n");
+    print("[Browser/UI Process] Started - Step 7 Full Browser\n");
     
     uint32 renderer_pid = 0;  // Renderer was created first (PID 0)
-    uint32 frame_count = 0;
     void* framebuffer_ptr = NULL;
     
     // Wait for framebuffer to be created by renderer
@@ -142,21 +149,35 @@ void browser_process(void) {
         print("\n");
     }
     
+    // Simulate user typing a URL
+    uint32 url_requested = 0;
+    
+    // Browser main event loop (Step 7)
     while (1) {
         browser_counter++;
         
-        // Every so often, send render request to renderer
-        if (browser_counter % 5 == 0) {
-            sys_send_msg(renderer_pid, MSG_TYPE_RENDER, frame_count++, 0);
+        // Simulate user input after a delay
+        if (!url_requested && browser_counter > 10) {
+            print("[Browser] User entered URL: http://example.com/\n");
+            
+            // Send URL request to renderer (which will fetch and parse)
+            sys_send_msg(renderer_pid, MSG_TYPE_URL_REQUEST, 0, 0);
+            url_requested = 1;
         }
         
-        // Poll for responses from renderer
+        // Poll for events
         message_t msg;
         if (sys_poll_msg(&msg) == 0) {
             if (msg.type == MSG_TYPE_FRAME_READY) {
-                // Received frame ready notification
-                // In real browser, would composite framebuffer to screen
-                // For now, just acknowledge receipt
+                // Frame is ready - display it
+                // In a real browser, this would composite to screen
+                if (!browser_page_loaded) {
+                    print("[Browser] Page rendered and displayed!\n");
+                    browser_page_loaded = 1;
+                }
+            } else if (msg.type == INPUT_EVENT_KEY_DOWN) {
+                // Handle keyboard input
+                // For now, just acknowledge
             }
         }
         
@@ -165,10 +186,10 @@ void browser_process(void) {
     }
 }
 
-// Renderer process - simulates HTML/layout renderer (Step 6 enhanced)
+// Renderer process - Full renderer with network, HTML, layout (Step 7)
 volatile uint32 renderer_counter = 0;
 void renderer_process(void) {
-    print("[Renderer Process] Started - Step 6 with shared framebuffer\n");
+    print("[Renderer Process] Started - Step 7 Full Renderer\n");
     
     // Define framebuffer dimensions
     const uint32 FB_WIDTH = 320;
@@ -204,33 +225,67 @@ void renderer_process(void) {
     print_hex((uint32)pixels);
     print("\n");
     
-    uint32 color_index = 0;
-    
+    // Renderer main loop (Step 7)
     while (1) {
         renderer_counter++;
         
-        // Poll for render requests from browser
+        // Poll for requests from browser
         message_t msg;
         if (sys_poll_msg(&msg) == 0) {
-            if (msg.type == MSG_TYPE_RENDER) {
-                // Received render request
-                // "Render" by filling framebuffer with a pattern
-                // Cycle through colors to show it's working
-                uint32 colors[] = {0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF};
-                uint32 color = colors[color_index % 6];
-                color_index++;
+            if (msg.type == MSG_TYPE_URL_REQUEST) {
+                print("[Renderer] Received URL request\n");
                 
-                // Fill a small rectangle to show activity
-                for (uint32 y = 10; y < 30; y++) {
-                    for (uint32 x = 10; x < 50; x++) {
-                        if (x < FB_WIDTH && y < FB_HEIGHT) {
-                            pixels[y * FB_WIDTH + x] = color;
+                // Step 7.1: Fetch page via network
+                print("[Renderer] Fetching http://example.com/\n");
+                net_response_t response;
+                if (http_get("example.com", "/", &response) == 0) {
+                    print("[Renderer] HTTP Response: ");
+                    print_hex(response.status_code);
+                    print(" (");
+                    print_hex(response.content_length);
+                    print(" bytes)\n");
+                    
+                    // Step 7.2: Parse HTML
+                    print("[Renderer] Parsing HTML...\n");
+                    html_node_t* html_tree = html_parse(response.content);
+                    if (html_tree) {
+                        print("[Renderer] HTML parsed successfully\n");
+                        
+                        // Step 7.3: Create layout
+                        print("[Renderer] Creating layout...\n");
+                        layout_tree_t* layout = layout_create_tree(html_tree, FB_WIDTH);
+                        if (layout) {
+                            print("[Renderer] Layout created (height: ");
+                            print_hex(layout->total_height);
+                            print(")\n");
+                            
+                            // Step 7.4: Render to framebuffer
+                            print("[Renderer] Rendering to framebuffer...\n");
+                            framebuffer_t fb;
+                            fb.width = FB_WIDTH;
+                            fb.height = FB_HEIGHT;
+                            fb.pitch = FB_WIDTH * 4;
+                            fb.pixels = pixels;
+                            
+                            layout_render_to_framebuffer(layout, &fb);
+                            print("[Renderer] Rendering complete\n");
+                            
+                            // Clean up
+                            layout_free_tree(layout);
                         }
+                        
+                        html_free(html_tree);
+                    }
+                    
+                    // Free response content
+                    if (response.content) {
+                        kfree(response.content);
                     }
                 }
                 
-                // Send frame ready notification back to browser
-                sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME_READY, msg.data1, shm_id);
+                // Send frame ready notification
+                print("[Renderer] Sending FRAME_READY to browser\n");
+                sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME_READY, 0, shm_id);
             }
         }
         
@@ -241,9 +296,9 @@ void renderer_process(void) {
 
 // Main kernel process - handles monitoring
 void kernel_main_process(void) {
-    print("Step 6: Shared memory and framebuffer rendering initialized.\n");
-    print("Browser <-> Renderer communication with zero-copy framebuffer.\n");
-    print("Monitoring process execution and frame rendering...\n\n");
+    print("Step 6 & 7: Full browser-capable OS initialized.\n");
+    print("Browser features: Networking, HTML parsing, Layout, Rendering\n");
+    print("Monitoring browser activity...\n\n");
     
     uint32 last_print_tick = 0;
     while (1) {
@@ -253,10 +308,9 @@ void kernel_main_process(void) {
             print_hex(browser_counter);
             print(" Renderer:");
             print_hex(renderer_counter);
-            print(" FB_ID:");
-            print_hex(g_framebuffer_shm_id);
-            print(" Ticks:");
-            print_hex((uint32)g_timer_ticks);
+            if (browser_page_loaded) {
+                print(" [PAGE_LOADED]");
+            }
             print("\n");
             last_print_tick = g_timer_ticks;
         }
@@ -304,12 +358,20 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     tss_init(0x10, kernel_stack);
     print("TSS initialized\n");
     
-    print("\n=== Step 6: Shared Memory, Graphics & Rendering ===\n");
-    print("Demonstrating zero-copy framebuffer rendering\n\n");
+    print("\n=== Steps 6 & 7: Browser-Capable Operating System ===\n");
+    print("Step 6: Shared memory, framebuffer rendering\n");
+    print("Step 7: Input, networking, HTML parsing, layout\n\n");
     
     // Initialize shared memory subsystem
     shm_init();
     print("Shared memory subsystem initialized\n");
+    
+    // Initialize Step 7 subsystems
+    input_init();
+    network_init();
+    html_init();
+    layout_init();
+    print("Input, network, HTML, and layout subsystems initialized\n");
     
     // Initialize task subsystem first
     task_init();
@@ -317,27 +379,25 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     // Initialize process subsystem
     process_init();
     
-    // Create processes with IPC and shared memory capabilities
-    print("Creating processes with IPC and shared memory...\n");
+    // Create processes with full browser capabilities
+    print("Creating browser processes...\n");
     process_t* renderer_proc = process_create(renderer_process, 0);
     print("  -> Renderer process: PID=");
     print_hex(renderer_proc->pid);
-    print(" (HTML/Layout + Framebuffer)\n");
+    print(" (Network + HTML + Layout + Render)\n");
     
     process_t* browser_proc = process_create(browser_process, 0);
     print("  -> Browser process: PID=");
     print_hex(browser_proc->pid);
-    print(" (UI/Compositor)\n");
+    print(" (UI/Input/Compositor)\n");
     
     process_t* main_proc = process_create(kernel_main_process, 0);
     print("  -> Monitor process: PID=");
     print_hex(main_proc->pid);
     print(" (System monitor)\n");
     
-    print("\nNote: Renderer creates shared framebuffer.\n");
-    print("Browser maps the same framebuffer (zero-copy).\n");
-    print("Renderer draws pixels, sends FRAME_READY event.\n");
-    print("Browser receives event and displays frame.\n\n");
+    print("\nBrowser will fetch and render http://example.com/\n");
+    print("Complete flow: URL → Network → HTML → Layout → Render → Display\n\n");
     
     // Enable interrupts to start scheduling
     print("Enabling interrupts and starting process scheduling...\n\n");
