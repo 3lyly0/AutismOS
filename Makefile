@@ -29,9 +29,9 @@ ISO_DIR=isodir
 
 
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
-		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o\
+		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o $(BUILD)/syscall.o $(BUILD)/user_program_asm.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o\
-		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/kernel.o\
+		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/kernel.o\
 		$(BUILD)/video.o $(BUILD)/disk.o $(BUILD)/sound.o
 
 
@@ -67,6 +67,12 @@ $(BUILD)/exception.o : $(ASM)/exception.asm
 $(BUILD)/irq.o : $(ASM)/irq.asm
 	$(NASM) $(ASM_FLAGS) $(ASM)/irq.asm -o $(BUILD)/irq.o
 
+$(BUILD)/syscall.o : $(ASM)/syscall.asm
+	$(NASM) $(ASM_FLAGS) $(ASM)/syscall.asm -o $(BUILD)/syscall.o
+
+$(BUILD)/user_program_asm.o : $(ASM)/user_program.asm
+	$(NASM) $(ASM_FLAGS) $(ASM)/user_program.asm -o $(BUILD)/user_program_asm.o
+
 
 
 
@@ -97,6 +103,12 @@ $(BUILD)/task.o : $(KERNEL)/task.c
 
 $(BUILD)/video.o : $(KERNEL)/video.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/video.c -o $(BUILD)/video.o
+
+$(BUILD)/syscall_c.o : $(KERNEL)/syscall.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/syscall.c -o $(BUILD)/syscall_c.o
+
+$(BUILD)/usermode.o : $(KERNEL)/usermode.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/usermode.c -o $(BUILD)/usermode.o
 
 
 

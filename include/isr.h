@@ -52,6 +52,7 @@ extern void exception_29();
 extern void exception_30();
 extern void exception_31();
 extern void exception_128();
+extern void syscall_int_0x80();
 
 
 extern void irq_0_with_task_switch();
