@@ -42,6 +42,9 @@ static inline void w8 (uint16 r, uint8  v){ outportb(io_base + r, v); }
 static inline void w16(uint16 r, uint16 v){ outports(io_base + r, v); }
 static inline void w32(uint16 r, uint32 v){ outportl(io_base + r, v); }
 
+static uint8 rx_buffer_raw[RTL8139_RX_BUF_SIZE + 16] __attribute__((aligned(16)));
+
+
 void rtl8139_set_receive_callback(void (*cb)(uint8*, uint16)) {
     receive_callback = cb;
 }
@@ -68,9 +71,10 @@ void rtl8139_init(void) {
         mac_address[i] = r8(REG_MAC0 + i);
     }
 
-    rx_buffer = (uint8*)kmalloc(RTL8139_RX_BUF_SIZE + 16);
+    rx_buffer = rx_buffer_raw;
     memset(rx_buffer, 0, RTL8139_RX_BUF_SIZE + 16);
     w32(REG_RXBUF, (uint32)rx_buffer);
+
 
     for (int i = 0; i < 4; i++) {
         tx_buffers[i] = (uint8*)kmalloc(RTL8139_TX_BUF_SIZE);
