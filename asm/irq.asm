@@ -1,5 +1,6 @@
 section .text
     extern isr_irq_handler
+    extern task_scheduler_tick
 
 irq_handler:
     pusha
@@ -28,6 +29,43 @@ irq_handler:
     sti
     iret
 
+; Special handler for timer interrupt (IRQ0) with task switching
+global irq_0_with_task_switch
+irq_0_with_task_switch:
+    cli
+    push byte 0         ; Error code
+    push byte 32        ; Interrupt number (IRQ0 = 32)
+    
+    ; Save all registers
+    pusha
+    mov ax, ds
+    push eax
+
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    ; Call scheduler tick - it will handle task switching
+    ; and return the ESP to use
+    push esp
+    call task_scheduler_tick
+    mov esp, eax        ; ESP returned might be different (task switched)
+
+    ; Restore registers from (potentially new) stack
+    pop ebx
+    mov ds, bx
+    mov es, bx
+    mov fs, bx
+    mov gs, bx
+
+    popa
+    add esp, 0x8        ; Skip error code and int_no
+
+    sti
+    iret
+
 
 %macro IRQ 2
   global irq_%1
@@ -39,7 +77,6 @@ irq_handler:
 %endmacro
 
 
-IRQ 0, 32
 IRQ 1, 33
 IRQ 2, 34
 IRQ 3, 35

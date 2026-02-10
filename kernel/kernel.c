@@ -12,14 +12,17 @@
 #include "io_ports.h"
 #include "disk.h"
 #include "sound.h"
+#include "task.h"
 
 // Global tick counter for timer
 volatile uint64 g_timer_ticks = 0;
 
 // Timer interrupt handler
+// Note: Task switching is now handled in the assembly IRQ handler
 void timer_interrupt_handler(REGISTERS *regs) {
     (void)regs; // Suppress unused parameter warning
-    g_timer_ticks++;
+    // Timer tick and task switching handled by task_scheduler_tick
+    // which is called directly from irq_0_with_task_switch
 }
 
 // Halt the CPU forever
@@ -50,6 +53,66 @@ static inline void halt_cpu() {
     asm volatile("hlt");
 }
 
+// Idle task - runs when no other task is ready
+void idle_task(void) {
+    while (1) {
+        halt_cpu();
+    }
+}
+
+// Test task 1 - demonstrates multitasking
+volatile uint32 task1_counter = 0;
+void test_task_1(void) {
+    print("[Task 1 started]\n");
+    while (1) {
+        task1_counter++;
+        // Let other tasks run
+        for (volatile int i = 0; i < 100000; i++);
+    }
+}
+
+// Test task 2 - demonstrates multitasking
+volatile uint32 task2_counter = 0;
+void test_task_2(void) {
+    print("[Task 2 started]\n");
+    while (1) {
+        task2_counter++;
+        // Let other tasks run
+        for (volatile int i = 0; i < 100000; i++);
+    }
+}
+
+// Main kernel task - handles keyboard input and status display
+void kernel_main_task(void) {
+    print("Multitasking initialized. Tasks are running.\n");
+    print("Task counters will increment in background.\n");
+    print("Press any key to see it on the screen...\n\n");
+    
+    uint32 last_print_tick = 0;
+    while (1) {
+        char c = kb_getchar();
+        if (c != 0) {
+            char str[2] = {c, '\0'};
+            print(str);
+        }
+        
+        // Print task status every ~100 ticks (roughly 1 second at 100Hz)
+        if (g_timer_ticks - last_print_tick > 100) {
+            print("\nTask1 counter: ");
+            print_hex(task1_counter);
+            print(" | Task2 counter: ");
+            print_hex(task2_counter);
+            print(" | Ticks: ");
+            print_hex((uint32)g_timer_ticks);
+            print("\n");
+            last_print_tick = g_timer_ticks;
+        }
+        
+        // Use hlt instruction to save power when idle
+        halt_cpu();
+    }
+}
+
 void kmain(uint32 magic, multiboot_info_t *mbi) {
     gdt_init();
     idt_init();
@@ -57,8 +120,7 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     // Register timer interrupt handler (IRQ0 = interrupt 32)
     isr_register_interrupt_handler(IRQ_BASE + IRQ0_TIMER, timer_interrupt_handler);
     
-    // Now it's safe to enable interrupts
-    asm volatile("sti");
+    // Don't enable interrupts yet - wait until tasks are set up
     
     // Verify multiboot magic
     if (magic != MULTIBOOT_MAGIC) {
@@ -74,17 +136,32 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     clear_screen();
     print("Welcome to AutismOS!\n");
     beep();
-    print("Press any key to see it on the screen...\n");
-
-
-
+    
+    // Initialize task system
+    print("Initializing multitasking...\n");
+    task_init();
+    
+    // Create kernel tasks
+    print("Creating idle task...\n");
+    task_create(idle_task);
+    
+    print("Creating test task 1...\n");
+    task_create(test_task_1);
+    
+    print("Creating test task 2...\n");
+    task_create(test_task_2);
+    
+    print("Creating kernel main task...\n");
+    task_create(kernel_main_task);
+    
+    print("Starting multitasking...\n\n");
+    
+    // Now enable interrupts and enter idle loop
+    // The scheduler will switch to the tasks we created
+    asm volatile("sti");
+    
+    // Main kernel thread becomes the idle loop
     while (1) {
-        char c = kb_getchar();
-        if (c != 0) {
-            char str[2] = {c, '\0'};
-            print(str);
-        }
-        // Use hlt instruction to save power when idle
         halt_cpu();
     }
 }
