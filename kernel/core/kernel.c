@@ -217,7 +217,8 @@ void browser_process(void) {
                     draw_text(3, 17, "IP: ", COLOR_WHITE);
                     draw_text(8, 17, last_submitted_ip, COLOR_YELLOW);
                     
-                    // Display the actual ping response message
+                    // Display the actual ping response message (ensure null-terminated)
+                    g_ping_response.message[sizeof(g_ping_response.message) - 1] = '\0';
                     draw_text(3, 19, "Message: ", COLOR_WHITE);
                     draw_text(13, 19, (const char*)g_ping_response.message, COLOR_LIGHT_GRAY);
                     
@@ -310,9 +311,6 @@ void renderer_process(void) {
                         print("\n");
                     }
                     
-                    // Store ping response in global variable for browser to read
-                    g_ping_response = ping_resp;
-                    
                     // Create a simple text response to display
                     // Clear framebuffer first
                     for (uint32 i = 0; i < FB_WIDTH * FB_HEIGHT; i++) {
@@ -330,10 +328,10 @@ void renderer_process(void) {
                         print(ping_resp.message);
                         print("\n");
                     }
-                    
-                    // Store ping response in global variable even on failure
-                    g_ping_response = ping_resp;
                 }
+                
+                // Store ping response in global variable for browser to read
+                g_ping_response = ping_resp;
                 
                 // Send frame ready notification
                 sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME_READY, 0, shm_id);
