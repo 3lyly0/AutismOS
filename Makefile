@@ -31,7 +31,7 @@ ISO_DIR=isodir
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o $(BUILD)/syscall.o $(BUILD)/user_program_asm.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o\
-		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/kernel.o\
+		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/kernel.o\
 		$(BUILD)/video.o $(BUILD)/disk.o $(BUILD)/sound.o
 
 
@@ -103,6 +103,9 @@ $(BUILD)/task.o : $(KERNEL)/task.c
 
 $(BUILD)/process.o : $(KERNEL)/process.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/process.c -o $(BUILD)/process.o
+
+$(BUILD)/ipc.o : $(KERNEL)/ipc.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/ipc.c -o $(BUILD)/ipc.o
 
 $(BUILD)/video.o : $(KERNEL)/video.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/video.c -o $(BUILD)/video.o

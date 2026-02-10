@@ -5,6 +5,7 @@
 #include "kernel.h"
 #include "video.h"
 #include "usermode.h"
+#include "ipc.h"
 
 #define MAX_PROCESSES 32
 #define USER_STACK_SIZE 4096
@@ -36,6 +37,9 @@ process_t* process_create(void (*entry_point)(void), uint32 is_user_mode) {
     
     memset(new_process, 0, sizeof(process_t));
     new_process->pid = next_pid++;
+    
+    // Initialize message queue for IPC (Step 5)
+    message_queue_init(&new_process->inbox);
     
     // Create page directory for this process
     new_process->page_dir = create_page_directory();
@@ -96,3 +100,21 @@ void process_switch(process_t* next) {
         switch_page_directory(next->page_dir);
     }
 }
+
+// Find a process by PID (Step 5 - needed for IPC)
+process_t* process_find_by_pid(uint32 pid) {
+    if (!process_list_head) {
+        return NULL;
+    }
+    
+    process_t* proc = process_list_head;
+    do {
+        if (proc->pid == pid) {
+            return proc;
+        }
+        proc = proc->next;
+    } while (proc != process_list_head);
+    
+    return NULL;  // Not found
+}
+
