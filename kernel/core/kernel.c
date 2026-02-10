@@ -165,30 +165,31 @@ void browser_process(void) {
         }
     }
     
-    // Track last URL to detect changes
-    char last_submitted_url[256] = {0};
+    // Track last IP to detect changes
+    char last_submitted_ip[256] = {0};
     
     // Browser main event loop (Step 9)
     while (1) {
         browser_counter++;
         
-        // Check if user submitted a new URL (Step 9)
-        const char* current_url = ux_get_last_url();
-        if (current_url && current_url[0]) {
-            // Check if URL changed (user pressed Enter)
-            if (strcmp(last_submitted_url, current_url) != 0) {
-                // New URL submitted!
-                strcpy(last_submitted_url, current_url);
+        // Check if user submitted a new IP (Step 9)
+        const char* current_ip = ux_get_last_ip();
+        if (current_ip && current_ip[0]) {
+            // Check if IP changed (user pressed Enter)
+            if (strcmp(last_submitted_ip, current_ip) != 0) {
+                // New IP submitted!
+                strncpy(last_submitted_ip, current_ip, sizeof(last_submitted_ip) - 1);
+                last_submitted_ip[sizeof(last_submitted_ip) - 1] = '\0';
                 browser_url_submitted = 1;
                 browser_page_loaded = 0;
                 
                 if (!ux_is_silent()) {
-                    print("[Browser] User submitted URL: ");
-                    print(current_url);
+                    print("[Browser] User submitted IP: ");
+                    print(current_ip);
                     print("\n");
                 }
                 
-                // Send URL request to renderer
+                // Send IP request to renderer (ping request)
                 sys_send_msg(renderer_pid, MSG_TYPE_URL_REQUEST, 0, 0);
             }
         }
@@ -199,16 +200,16 @@ void browser_process(void) {
             if (msg.type == MSG_TYPE_FRAME_READY) {
                 // Frame is ready - display it in content area (Step 9)
                 if (!browser_page_loaded && browser_url_submitted) {
-                    // Show page loaded in content area
+                    // Show ping result in content area
                     graphics_clear_region(2, 14, 76, 9, COLOR_BLACK);
-                    draw_text(3, 15, "Page loaded successfully!", COLOR_LIGHT_GREEN);
-                    draw_text(3, 17, "URL: ", COLOR_WHITE);
-                    draw_text(8, 17, last_submitted_url, COLOR_YELLOW);
+                    draw_text(3, 15, "Ping completed!", COLOR_LIGHT_GREEN);
+                    draw_text(3, 17, "IP: ", COLOR_WHITE);
+                    draw_text(8, 17, last_submitted_ip, COLOR_YELLOW);
                     
                     browser_page_loaded = 1;
                     
                     if (!ux_is_silent()) {
-                        print("  [Browser] Page rendered in content area\n");
+                        print("  [Browser] Ping result displayed in content area\n");
                     }
                 }
             } else if (msg.type == INPUT_EVENT_KEY_DOWN) {
@@ -278,62 +279,38 @@ void renderer_process(void) {
         message_t msg;
         if (sys_poll_msg(&msg) == 0) {
             if (msg.type == MSG_TYPE_URL_REQUEST) {
-                const char* url_str = ux_get_last_url();
+                const char* ip_str = ux_get_last_ip();
                 if (!ux_is_silent()) {
-                    print("  [Renderer] Fetching ");
-                    print(url_str);
+                    print("  [Renderer] Pinging ");
+                    print(ip_str);
                     print("...\n");
                 }
                 
-                // Step 7.1: Parse the URL
-                url_t parsed_url;
-                if (parse_url(url_str, &parsed_url) != 0) {
+                // Ping the IP address
+                ping_response_t ping_resp;
+                if (ping_ip(ip_str, &ping_resp) == 0) {
                     if (!ux_is_silent()) {
-                        print("  [Renderer] Failed to parse URL: ");
-                        print(url_str);
+                        print("  [Renderer] Ping result: ");
+                        print(ping_resp.message);
                         print("\n");
                     }
-                    // Send frame ready anyway to avoid hanging
-                    sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME_READY, 0, shm_id);
-                    continue;
-                }
-                
-                if (!ux_is_silent()) {
-                    print("  [Renderer] Parsed host: ");
-                    print(parsed_url.host);
-                    print(", path: ");
-                    print(parsed_url.path);
-                    print("\n");
-                }
-                
-                // Step 7.2: Fetch page via network
-                net_response_t response;
-                if (http_get(parsed_url.host, parsed_url.path, &response) == 0) {
-                    // Step 7.3: Parse HTML (silently)
-                    html_node_t* html_tree = html_parse(response.content);
-                    if (html_tree) {
-                        // Step 7.4: Create layout (silently)
-                        layout_tree_t* layout = layout_create_tree(html_tree, FB_WIDTH);
-                        if (layout) {
-                            // Step 7.5: Render to framebuffer (silently)
-                            framebuffer_t fb;
-                            fb.width = FB_WIDTH;
-                            fb.height = FB_HEIGHT;
-                            fb.pitch = FB_WIDTH * 4;
-                            fb.pixels = pixels;
-                            
-                            layout_render_to_framebuffer(layout, &fb);
-                            
-                            // Clean up
-                            layout_free_tree(layout);
-                        }
-                        
-                        html_free(html_tree);
+                    
+                    // Create a simple text response to display
+                    // Clear framebuffer first
+                    for (uint32 i = 0; i < FB_WIDTH * FB_HEIGHT; i++) {
+                        pixels[i] = 0xFF000000; // Black background
                     }
                     
-                    // Free response content
-                    if (response.content) {
-                        kfree(response.content);
+                    // Draw ping result text
+                    // This is a simplified rendering - just display the result
+                    // In a real system, we would use the layout engine
+                    // For now, we'll skip HTML parsing and just show raw text
+                    
+                } else {
+                    if (!ux_is_silent()) {
+                        print("  [Renderer] Ping failed: ");
+                        print(ping_resp.message);
+                        print("\n");
                     }
                 }
                 

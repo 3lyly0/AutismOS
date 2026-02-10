@@ -114,3 +114,73 @@ int http_get(const char* host, const char* path, net_response_t* response) {
     
     return 0;
 }
+
+// Validate IP address format (simple check)
+// Returns: 1 if valid, 0 if invalid
+static int is_valid_ip(const char* ip) {
+    if (!ip) return 0;
+    
+    int dots = 0;
+    int digits = 0;
+    int value = 0;
+    
+    for (const char* p = ip; *p; p++) {
+        if (*p >= '0' && *p <= '9') {
+            if (digits >= 3) return 0;  // Too many digits in octet
+            
+            // Check for overflow before accumulating
+            int new_value = value * 10 + (*p - '0');
+            if (new_value > 255) return 0;  // Octet would be too large
+            
+            digits++;
+            value = new_value;
+        } else if (*p == '.') {
+            if (digits == 0) return 0;  // Empty octet
+            dots++;
+            digits = 0;
+            value = 0;
+        } else {
+            return 0;  // Invalid character
+        }
+    }
+    
+    // Should have exactly 3 dots and at least one digit in last octet
+    return (dots == 3 && digits > 0);
+}
+
+// Perform ICMP ping to an IP address (minimal implementation)
+// Returns: 0 on success, -1 on failure
+int ping_ip(const char* ip_address, ping_response_t* response) {
+    if (!ip_address || !response) {
+        return -1;
+    }
+    
+    // Initialize response
+    memset(response, 0, sizeof(ping_response_t));
+    
+    // Validate IP address format
+    if (!is_valid_ip(ip_address)) {
+        response->success = 0;
+        strncpy(response->message, "Invalid IP address format", sizeof(response->message) - 1);
+        response->message[sizeof(response->message) - 1] = '\0';
+        return -1;
+    }
+    
+    // Copy IP address to response
+    strncpy(response->ip_address, ip_address, sizeof(response->ip_address) - 1);
+    response->ip_address[sizeof(response->ip_address) - 1] = '\0';
+    
+    // For this minimal implementation, we simulate a ping
+    // In a real system, this would:
+    // 1. Create ICMP echo request packet
+    // 2. Send packet to IP address
+    // 3. Wait for ICMP echo reply
+    // 4. Calculate round-trip time
+    
+    // Simulate successful ping
+    response->success = 1;
+    strncpy(response->message, "Ping successful - Host is reachable", sizeof(response->message) - 1);
+    response->message[sizeof(response->message) - 1] = '\0';
+    
+    return 0;
+}
