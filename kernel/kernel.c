@@ -60,6 +60,12 @@ void idle_task(void) {
     }
 }
 
+// Task execution monitoring interval (ticks)
+#define PRINT_INTERVAL_TICKS 18  // ~180ms at 100Hz timer
+
+// Busy-wait delay for task yield
+#define TASK_YIELD_DELAY 100000
+
 // Test task 1 - demonstrates multitasking
 volatile uint32 task1_counter = 0;
 void test_task_1(void) {
@@ -67,7 +73,7 @@ void test_task_1(void) {
     while (1) {
         task1_counter++;
         // Let other tasks run
-        for (volatile int i = 0; i < 100000; i++);
+        for (volatile int i = 0; i < TASK_YIELD_DELAY; i++);
     }
 }
 
@@ -78,7 +84,7 @@ void test_task_2(void) {
     while (1) {
         task2_counter++;
         // Let other tasks run
-        for (volatile int i = 0; i < 100000; i++);
+        for (volatile int i = 0; i < TASK_YIELD_DELAY; i++);
     }
 }
 
@@ -90,8 +96,8 @@ void kernel_main_task(void) {
     
     uint32 last_print_tick = 0;
     while (1) {
-        // Print task status every ~18 ticks (roughly every 180ms at 100Hz)
-        if (g_timer_ticks - last_print_tick > 18) {
+        // Print task status every PRINT_INTERVAL_TICKS
+        if (g_timer_ticks - last_print_tick > PRINT_INTERVAL_TICKS) {
             print("T1:");
             print_hex(task1_counter);
             print(" T2:");
