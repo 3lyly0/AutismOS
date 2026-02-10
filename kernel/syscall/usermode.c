@@ -15,12 +15,12 @@ static void* user_heap_current = NULL;
 // Initialize user mode subsystem
 void usermode_init(void) {
     user_heap_current = (void*)USER_SPACE_START;
-    print("User mode subsystem initialized\n");
-    print("User space: 0x");
-    print_hex(USER_SPACE_START);
-    print(" - 0x");
-    print_hex(USER_SPACE_END);
-    print("\n");
+    debug_print("User mode subsystem initialized\n");
+    debug_print("User space: 0x");
+    debug_print_hex(USER_SPACE_START);
+    debug_print(" - 0x");
+    debug_print_hex(USER_SPACE_END);
+    debug_print("\n");
 }
 
 // Allocate user space memory

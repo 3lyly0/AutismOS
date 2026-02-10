@@ -2,11 +2,40 @@
 
 AutismOS is a minimalistic educational operating system designed for learning low-level system programming, with a focus on bootloading, interrupts, hardware interaction, and **browser-oriented architecture**.
 
-**Latest Achievement: Steps 6 & 7 - Browser-Capable OS ✅**
+**Latest Achievement: Step 8 - User Experience Kernel ✅**
 
 ---
 
 ## **Current Features**
+
+### ✅ Step 8: User Experience Kernel (COMPLETE)
+
+The transformation from technical demo to real OS:
+
+#### Clean Boot Experience
+- **UX Kernel Module** manages the user experience layer
+- **Boot screen** with AutismOS ASCII art logo
+- **Clean UI** after boot showing system status and shortcuts
+- **Silent mode** - debug logs only to serial port, not screen
+- **No technical spam** - users see a clean interface, not kernel chatter
+
+#### Control Loop & Interactivity
+- **Keyboard shortcuts** for system control
+  - `Alt+B` - Focus Browser
+  - `Alt+Q` - Quit Application
+- **Hotkey handler** integrated with keyboard driver
+- **Immediate response** to user input
+
+#### Identity & Default Behavior
+- **Browser-First OS** - boots directly into browser-ready state
+- **Default URL** loaded automatically (http://example.com/)
+- **Clear purpose** - "Browser-First Operating System"
+
+#### Focus & Persistence
+- **Active process tracking** (Browser PID=1 has focus)
+- **URL persistence** stored in kernel memory
+- **State survives** within boot session
+- **Visual feedback** showing active app and current URL
 
 ### ✅ Steps 6 & 7: Browser-Capable Operating System (COMPLETE)
 
@@ -109,34 +138,50 @@ If you make changes to the source code, follow these steps to rebuild and run th
 
 ### **What You'll See**
 
-When you run AutismOS, you'll see:
-- System initialization and memory setup
-- **Steps 6 & 7 Demo**: Complete browser pipeline execution
-- Renderer creating shared framebuffer
-- Browser mapping framebuffer (zero-copy)
-- HTML fetching, parsing, layout, and rendering
-- Frame-ready notifications via IPC
-- Three isolated processes working together
+When you run AutismOS, you'll experience a **clean, professional boot sequence**:
 
-Example output:
+#### On Screen (VGA Display):
 ```
-=== Steps 6 & 7: Browser-Capable Operating System ===
-Step 6: Shared memory, framebuffer rendering
-Step 7: Input, networking, HTML parsing, layout
+  █████╗ ██╗   ██╗████████╗██╗███████╗███╗   ███╗ ██████╗ ███████╗
+ ██╔══██╗██║   ██║╚══██╔══╝██║██╔════╝████╗ ████║██╔═══██╗██╔════╝
+ ███████║██║   ██║   ██║   ██║███████╗██╔████╔██║██║   ██║███████╗
+ ██╔══██║██║   ██║   ██║   ██║╚════██║██║╚██╔╝██║██║   ██║╚════██║
+ ██║  ██║╚██████╔╝   ██║   ██║███████║██║ ╚═╝ ██║╚██████╔╝███████║
+ ╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚══════╝
 
-Renderer process: PID=0x00000000 (Network + HTML + Layout + Render)
-Browser process: PID=0x00000001 (UI/Input/Compositor)
+                    Browser-First Operating System
 
-[Renderer] Created shared framebuffer ID: 0x00000001 (320x200)
-[Renderer] Framebuffer mapped at: 0x00113000
-[Browser] User entered URL: http://example.com/
-[Renderer] Fetching http://example.com/
-[Renderer] HTTP Response: 200 (151 bytes)
-[Renderer] Parsing HTML...
-[Renderer] Creating layout...
-[Renderer] Rendering to framebuffer...
-[Browser] Page rendered and displayed!
+  Booting...
 ```
+
+Then transitions to:
+```
+  AutismOS - Ready
+  ═══════════════════════════════════════════════════════════════════
+
+  Active: Browser
+  URL: http://example.com/
+
+  Shortcuts:
+    Alt+B - Focus Browser
+    Alt+Q - Quit Application
+
+  ═══════════════════════════════════════════════════════════════════
+```
+
+#### Behind the Scenes:
+- Renderer process (PID=0) fetches and renders pages
+- Browser process (PID=1) handles UI and input
+- Monitor process (PID=2) tracks system stats
+- All debug output goes to **serial port only** (use `-serial stdio` to see it)
+
+**Key Features:**
+- ✅ Clean boot with no technical spam
+- ✅ Immediate interactivity (keyboard shortcuts work)
+- ✅ Clear system identity and purpose
+- ✅ Professional look and feel
+- ✅ Three processes working seamlessly in background
+
 
 ---
 
@@ -158,9 +203,10 @@ Browser process: PID=0x00000001 (UI/Input/Compositor)
   - **`kernel/ipc/`**: Inter-process communication (ipc.c, shm.c)
   - **`kernel/syscall/`**: System call implementation (syscall.c, usermode.c)
   - **`kernel/browser/`**: Browser-specific functionality (html.c, layout.c, network.c)
+  - **`kernel/ux/`**: **NEW** User experience layer (ux.c) - Step 8
 - **`drivers/`**: Hardware drivers, organized by device type:
-  - **`drivers/input/`**: Input devices (keyboard.c, mouse.c, input.c)
-  - **`drivers/video/`**: Video driver (video.c)
+  - **`drivers/input/`**: Input devices (keyboard.c with hotkey support, mouse.c, input.c)
+  - **`drivers/video/`**: Video driver (video.c with debug_print for serial-only output)
   - **`drivers/storage/`**: Storage devices (disk.c)
   - **`drivers/audio/`**: Audio devices (sound.c)
 - **`lib/`**: Utility libraries (string.c)
