@@ -2,8 +2,8 @@ ENTRY(_start)
 
 SECTIONS
 {
-    __kernel_section_start = .;
     .text 0x0100000 : {
+        __kernel_section_start = .;
         __kernel_text_section_start = .;
         . = ALIGN(4);
         LONG(0x1BADB002)
