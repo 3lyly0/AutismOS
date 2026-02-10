@@ -105,7 +105,7 @@ volatile uint32 browser_counter = 0;
 void browser_process(void) {
     print("[Browser Process] Started (simulates UI/control process)\n");
     
-    uint32 renderer_pid = 1;  // Will send to renderer (PID 1)
+    uint32 renderer_pid = 0;  // Renderer was created first (PID 0)
     uint32 frame_count = 0;
     
     while (1) {
