@@ -39,14 +39,14 @@ void tss_init(uint32 kernel_ss, uint32 kernel_esp) {
     memset(&g_tss, 0, sizeof(TSS));
     
     // Set up TSS
-    g_tss.ss0 = kernel_ss;   // Kernel data segment
+    g_tss.ss0 = kernel_ss;   // Kernel data segment (0x10)
     g_tss.esp0 = kernel_esp; // Kernel stack pointer
-    g_tss.cs = 0x0B;         // Kernel code segment (with RPL=3 mask)
-    g_tss.ss = 0x13;         // Kernel data segment (with RPL=3 mask)
-    g_tss.ds = 0x13;
-    g_tss.es = 0x13;
-    g_tss.fs = 0x13;
-    g_tss.gs = 0x13;
+    g_tss.cs = 0x08;         // Kernel code segment (RPL=0)
+    g_tss.ss = 0x10;         // Kernel data segment (RPL=0)
+    g_tss.ds = 0x10;
+    g_tss.es = 0x10;
+    g_tss.fs = 0x10;
+    g_tss.gs = 0x10;
     
     // Add TSS descriptor to GDT
     // Access: 0xE9 = Present, Executable, Accessed, 32-bit TSS

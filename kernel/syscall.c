@@ -2,6 +2,7 @@
 #include "video.h"
 #include "idt.h"
 #include "isr.h"
+#include "usermode.h"
 
 // Syscall handler - called when user mode executes int 0x80
 void syscall_handler(REGISTERS *regs) {
@@ -13,7 +14,24 @@ void syscall_handler(REGISTERS *regs) {
             // SYS_WRITE: Print a string
             // EBX = pointer to string
             char *str = (char *)regs->ebx;
-            print(str);
+            
+            // Validate pointer is in user space
+            if ((uint32)str < USER_SPACE_START || (uint32)str >= USER_SPACE_END) {
+                print("Syscall error: Invalid pointer\n");
+                regs->eax = -1;
+                return;
+            }
+            
+            // Additional safety: limit string length to prevent reading past user space
+            uint32 max_len = USER_SPACE_END - (uint32)str;
+            if (max_len > 1024) max_len = 1024;  // Reasonable limit
+            
+            // Print with length check
+            for (uint32 i = 0; i < max_len && str[i] != '\0'; i++) {
+                char c[2] = {str[i], '\0'};
+                print(c);
+            }
+            
             regs->eax = 0; // Return success
             break;
         }
