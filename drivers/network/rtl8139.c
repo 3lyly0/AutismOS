@@ -90,8 +90,9 @@ void rtl8139_init(void) {
         tx_buffers[i] = (uint8*)kmalloc(RTL8139_TX_BUF_SIZE);
     }
     
-    rtl_write32(REG_IMR, 0x0000);
-    rtl_write32(REG_ISR, 0xFFFF);
+    rtl_write16(REG_IMR, 0x0005);
+    rtl_write16(REG_ISR, 0xFFFF);
+
     
     rtl_write32(REG_RXCONFIG, RX_ACCEPT_ALL | RX_BUF_WRAP);
     rtl_write32(REG_TXCONFIG, 0x03000000);
@@ -120,7 +121,7 @@ int rtl8139_poll_receive(void) {
     uint16 isr = rtl_read16(REG_ISR);
     if (!(isr & 0x01)) return 0;
     
-    rtl_write16(REG_ISR, 0x01);
+    rtl_write16(REG_ISR, isr);
     
     while ((rtl_read8(REG_CMD) & 0x01) == 0) {
         uint16 rx_status = *(uint16*)(rx_buffer + rx_offset);
