@@ -41,46 +41,46 @@ static void *heap_end = NULL;
 
 void multiboot_parse_memory_map(multiboot_info_t *mbi) {
     if (!(mbi->flags & (1 << 6))) {
-        print("Memory map not available from bootloader\n");
+        debug_print("Memory map not available from bootloader\n");
         return;
     }
 
-    print("\n=== Memory Map ===\n");
+    debug_print("\n=== Memory Map ===\n");
     
     multiboot_mmap_entry_t *mmap = (multiboot_mmap_entry_t *)mbi->mmap_addr;
     multiboot_mmap_entry_t *mmap_end = (multiboot_mmap_entry_t *)(mbi->mmap_addr + mbi->mmap_length);
     
     while (mmap < mmap_end) {
-        print("Base: 0x");
-        print_hex((uint32_t)(mmap->base_addr >> 32));
-        print_hex((uint32_t)(mmap->base_addr & 0xFFFFFFFF));
-        print(" Length: 0x");
-        print_hex((uint32_t)(mmap->length >> 32));
-        print_hex((uint32_t)(mmap->length & 0xFFFFFFFF));
-        print(" Type: ");
+        debug_print("Base: 0x");
+        debug_print_hex((uint32_t)(mmap->base_addr >> 32));
+        debug_print_hex((uint32_t)(mmap->base_addr & 0xFFFFFFFF));
+        debug_print(" Length: 0x");
+        debug_print_hex((uint32_t)(mmap->length >> 32));
+        debug_print_hex((uint32_t)(mmap->length & 0xFFFFFFFF));
+        debug_print(" Type: ");
         
         if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) {
-            print("Available\n");
+            debug_print("Available\n");
             uint64 end = mmap->base_addr + mmap->length;
             if (end > memory_end && end < 0x100000000ULL) {
                 memory_end = (uint32_t)end;
             }
         } else {
-            print("Reserved\n");
+            debug_print("Reserved\n");
         }
         
         mmap = (multiboot_mmap_entry_t *)((uint32_t)mmap + mmap->size + sizeof(mmap->size));
     }
     
-    print("Detected memory end: 0x");
-    print_hex(memory_end);
-    print("\n");
-    print("Kernel start: 0x");
-    print_hex((uint32_t)&__kernel_section_start);
-    print("\n");
-    print("Kernel end: 0x");
-    print_hex((uint32_t)&__kernel_section_end);
-    print("\n\n");
+    debug_print("Detected memory end: 0x");
+    debug_print_hex(memory_end);
+    debug_print("\n");
+    debug_print("Kernel start: 0x");
+    debug_print_hex((uint32_t)&__kernel_section_start);
+    debug_print("\n");
+    debug_print("Kernel end: 0x");
+    debug_print_hex((uint32_t)&__kernel_section_end);
+    debug_print("\n\n");
 }
 
 int is_page_used(size_t page) {
@@ -133,14 +133,14 @@ void free_page(void *ptr) {
 }
 
 void paging_init() {
-    print("Initializing paging...\n");
+    debug_print("Initializing paging...\n");
     
-    print("Page directory at: 0x");
-    print_hex((uint32_t)&kernel_page_directory);
-    print("\n");
-    print("Page table at: 0x");
-    print_hex((uint32_t)first_page_table);
-    print("\n");
+    debug_print("Page directory at: 0x");
+    debug_print_hex((uint32_t)&kernel_page_directory);
+    debug_print("\n");
+    debug_print("Page table at: 0x");
+    debug_print_hex((uint32_t)first_page_table);
+    debug_print("\n");
     
     memset(&kernel_page_directory, 0, sizeof(kernel_page_directory));
     memset(first_page_table, 0, sizeof(first_page_table));
@@ -152,9 +152,9 @@ void paging_init() {
         pages_to_map = PAGE_TABLE_SIZE;
     }
     
-    print("Mapping ");
-    print_hex(pages_to_map);
-    print(" pages\n");
+    debug_print("Mapping ");
+    debug_print_hex(pages_to_map);
+    debug_print(" pages\n");
     
     for (uint32_t i = 0; i < pages_to_map; i++) {
         uint32_t phys_addr = i * PAGE_SIZE;
@@ -165,7 +165,7 @@ void paging_init() {
     kernel_page_directory.tables[0] = first_page_table;
     
     paging_initialized = 1;
-    print("Paging structures initialized\n");
+    debug_print("Paging structures initialized\n");
 }
 
 void paging_enable() {
@@ -173,7 +173,7 @@ void paging_enable() {
         kernel_panic("Attempted to enable paging before initialization");
     }
     
-    print("Enabling paging...\n");
+    debug_print("Enabling paging...\n");
     
     asm volatile(
         "mov %0, %%cr3\n"
@@ -185,7 +185,7 @@ void paging_enable() {
         : "eax"
     );
     
-    print("Paging enabled successfully\n");
+    debug_print("Paging enabled successfully\n");
 }
 
 // Get kernel page directory
@@ -285,9 +285,9 @@ void *kmalloc(size_t size) {
             kernel_panic("Heap initialization failed - no space after kernel");
         }
         
-        print("Heap initialized at 0x");
-        print_hex((uint32_t)heap_current);
-        print("\n");
+        debug_print("Heap initialized at 0x");
+        debug_print_hex((uint32_t)heap_current);
+        debug_print("\n");
     }
     
     void *result = heap_current;
@@ -323,12 +323,12 @@ void memory_init(multiboot_info_t *mbi) {
         set_page_used(i);
     }
     
-    print("Memory initialized\n");
-    print("Kernel pages marked as used: ");
-    print_hex(kernel_start_page);
-    print(" - ");
-    print_hex(kernel_end_page);
-    print("\n");
+    debug_print("Memory initialized\n");
+    debug_print("Kernel pages marked as used: ");
+    debug_print_hex(kernel_start_page);
+    debug_print(" - ");
+    debug_print_hex(kernel_end_page);
+    debug_print("\n");
     
     memory_initialized = 1;
 }
