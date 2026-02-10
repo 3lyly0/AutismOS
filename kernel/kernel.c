@@ -86,23 +86,17 @@ void test_task_2(void) {
 void kernel_main_task(void) {
     print("Multitasking initialized. Tasks are running.\n");
     print("Task counters will increment in background.\n");
-    print("Press any key to see it on the screen...\n\n");
+    print("Monitoring task execution...\n\n");
     
     uint32 last_print_tick = 0;
     while (1) {
-        char c = kb_getchar();
-        if (c != 0) {
-            char str[2] = {c, '\0'};
-            print(str);
-        }
-        
-        // Print task status every ~100 ticks (roughly 1 second at 100Hz)
-        if (g_timer_ticks - last_print_tick > 100) {
-            print("\nTask1 counter: ");
+        // Print task status every ~18 ticks (roughly every 180ms at 100Hz)
+        if (g_timer_ticks - last_print_tick > 18) {
+            print("T1:");
             print_hex(task1_counter);
-            print(" | Task2 counter: ");
+            print(" T2:");
             print_hex(task2_counter);
-            print(" | Ticks: ");
+            print(" Ticks:");
             print_hex((uint32)g_timer_ticks);
             print("\n");
             last_print_tick = g_timer_ticks;
