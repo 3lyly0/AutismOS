@@ -116,12 +116,14 @@ void *get_free_page() {
 
 void *allocate_page() {
     if (no_free_pages()) {
-        kernel_panic("No free pages available - OOM");
+        debug_print("ERROR: No free pages available - OOM\n");
+        return NULL;
     }
 
     void *page = get_free_page();
     if (page == NULL) {
-        kernel_panic("Failed to get a free page - OOM");
+        debug_print("ERROR: Failed to get a free page - OOM\n");
+        return NULL;
     }
 
     return page;
@@ -200,8 +202,13 @@ page_directory_t* create_page_directory(void) {
     // Allocate page directory structure
     page_directory_t* dir = (page_directory_t*)kmalloc(sizeof(page_directory_t));
     if (!dir) {
+        debug_print("ERROR: Failed to allocate page directory\n");
         return NULL;
     }
+    
+    debug_print("Creating page directory at 0x");
+    debug_print_hex((uint32_t)dir);
+    debug_print("\n");
     
     memset(dir, 0, sizeof(page_directory_t));
     
@@ -209,6 +216,7 @@ page_directory_t* create_page_directory(void) {
     // This ensures kernel code is accessible from all processes
     // Important: Only copy the entries (which contain physical addresses),
     // NOT the virtual pointers in tables[]
+    int entries_copied = 0;
     for (int dir_index = 0; dir_index < PAGE_DIRECTORY_SIZE; dir_index++) {
         if (kernel_page_directory.entries[dir_index] != 0) {
             // Copy kernel page directory entries (these contain physical addresses)
@@ -216,8 +224,13 @@ page_directory_t* create_page_directory(void) {
             // Extract the physical address from the entry and get its virtual pointer
             uint32_t phys_addr = kernel_page_directory.entries[dir_index] & 0xFFFFF000;
             dir->tables[dir_index] = (uint32_t*)phys_addr;
+            entries_copied++;
         }
     }
+    
+    debug_print("Copied ");
+    debug_print_hex(entries_copied);
+    debug_print(" page directory entries\n");
     
     return dir;
 }
@@ -277,11 +290,13 @@ void map_page_in_directory(page_directory_t* dir, uint32_t virt_addr, uint32_t p
 
 void *kmalloc(size_t size) {
     if (!memory_initialized) {
-        kernel_panic("kmalloc called before memory initialization");
+        debug_print("ERROR: kmalloc called before memory initialization\n");
+        return NULL;
     }
     
     if (size == 0) {
-        kernel_panic("kmalloc called with size 0");
+        debug_print("WARNING: kmalloc called with size 0\n");
+        return NULL;
     }
     
     size_t aligned_size = (size + 15) & ~15;
@@ -292,7 +307,8 @@ void *kmalloc(size_t size) {
         heap_end = (void *)(memory_end > MEMORY_SIZE ? MEMORY_SIZE : memory_end);
         
         if (heap_current >= heap_end) {
-            kernel_panic("Heap initialization failed - no space after kernel");
+            debug_print("ERROR: Heap initialization failed - no space after kernel\n");
+            return NULL;
         }
         
         debug_print("Heap initialized at 0x");
@@ -300,12 +316,27 @@ void *kmalloc(size_t size) {
         debug_print("\n");
     }
     
-    void *result = heap_current;
-    heap_current = (void *)((uint32_t)heap_current + aligned_size);
-    
-    if (heap_current > heap_end) {
-        kernel_panic("kmalloc OOM - heap exhausted");
+    // Check if allocation would exceed heap bounds BEFORE modifying heap_current
+    void *next_heap = (void *)((uint32_t)heap_current + aligned_size);
+    if (next_heap > heap_end) {
+        debug_print("ERROR: kmalloc OOM - heap exhausted\n");
+        return NULL;
     }
+    
+    void *result = heap_current;
+    
+    // Debug: Show allocation
+    if (size > 256) {  // Only log larger allocations
+        debug_print("kmalloc(");
+        debug_print_hex(size);
+        debug_print(") -> 0x");
+        debug_print_hex((uint32_t)result);
+        debug_print(" (heap: 0x");
+        debug_print_hex((uint32_t)heap_current);
+        debug_print(")\n");
+    }
+    
+    heap_current = next_heap;
     
     return result;
 }

@@ -54,29 +54,18 @@ uint32 shm_create(uint32 size) {
     uint32 page_size = 4096;
     uint32 aligned_size = (size + page_size - 1) & ~(page_size - 1);
     
-    // For simplicity, we allocate just one page for small regions
-    // In a full implementation, we would allocate multiple pages for larger regions
-    // For now, clamp to single page
-    if (aligned_size > page_size) {
-        // Would need to allocate multiple contiguous pages
-        // For this minimal implementation, just allocate one page
-        aligned_size = page_size;
-    }
-    
-    // Allocate physical pages for the region
-    void* phys_addr = allocate_page();
-    if (!phys_addr) {
+    // Allocate contiguous memory from kernel heap instead of page allocator
+    // This gives us the required contiguous block for larger allocations
+    void* kernel_vaddr = kmalloc(aligned_size);
+    if (!kernel_vaddr) {
         return 0;
     }
-    
-    // For now, we'll identity map it in kernel space
-    void* kernel_vaddr = phys_addr;
     
     // Initialize the region
     region->id = next_shm_id++;
     region->size = aligned_size;
     region->kernel_vaddr = kernel_vaddr;
-    region->phys_addr = (uint32)phys_addr;
+    region->phys_addr = (uint32)kernel_vaddr;  // Identity mapped
     region->owner_pid = process_get_current() ? process_get_current()->pid : 0;
     region->ref_count = 0;
     region->next = NULL;
