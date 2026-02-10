@@ -29,10 +29,13 @@ ISO_DIR=isodir
 
 
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
-		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o\
-		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o\
-		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/kernel.o\
-		$(BUILD)/video.o $(BUILD)/disk.o $(BUILD)/sound.o
+		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o $(BUILD)/syscall.o $(BUILD)/user_program_asm.o\
+		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o $(BUILD)/pci.o\
+		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
+		$(BUILD)/input.o $(BUILD)/network.o $(BUILD)/html.o $(BUILD)/layout.o\
+		$(BUILD)/rtl8139.o $(BUILD)/ethernet.o $(BUILD)/arp.o $(BUILD)/ip.o $(BUILD)/icmp.o\
+		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/kernel.o\
+		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/disk.o $(BUILD)/sound.o
 
 
 all: $(BUILD) $(OBJECTS)
@@ -67,45 +70,121 @@ $(BUILD)/exception.o : $(ASM)/exception.asm
 $(BUILD)/irq.o : $(ASM)/irq.asm
 	$(NASM) $(ASM_FLAGS) $(ASM)/irq.asm -o $(BUILD)/irq.o
 
+$(BUILD)/syscall.o : $(ASM)/syscall.asm
+	$(NASM) $(ASM_FLAGS) $(ASM)/syscall.asm -o $(BUILD)/syscall.o
 
-
-$(BUILD)/kernel.o : $(KERNEL)/kernel.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/kernel.c -o $(BUILD)/kernel.o
-
-$(BUILD)/io_ports.o : $(KERNEL)/io_ports.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/io_ports.c -o $(BUILD)/io_ports.o
-
-$(BUILD)/gdt.o : $(KERNEL)/gdt.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/gdt.c -o $(BUILD)/gdt.o
-
-$(BUILD)/idt.o : $(KERNEL)/idt.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/idt.c -o $(BUILD)/idt.o
-
-$(BUILD)/isr.o : $(KERNEL)/isr.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/isr.c -o $(BUILD)/isr.o
-
-$(BUILD)/8259_pic.o : $(KERNEL)/8259_pic.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/8259_pic.c -o $(BUILD)/8259_pic.o
-
-$(BUILD)/memory.o : $(KERNEL)/memory.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/memory.c -o $(BUILD)/memory.o
-
-$(BUILD)/video.o : $(KERNEL)/video.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/video.c -o $(BUILD)/video.o
+$(BUILD)/user_program_asm.o : $(ASM)/user_program.asm
+	$(NASM) $(ASM_FLAGS) $(ASM)/user_program.asm -o $(BUILD)/user_program_asm.o
 
 
 
-$(BUILD)/keyboard.o : $(DRIVERS)/keyboard.c
-	$(CC) $(CC_FLAGS) -c $(DRIVERS)/keyboard.c -o $(BUILD)/keyboard.o
 
-$(BUILD)/mouse.o : $(DRIVERS)/mouse.c
-	$(CC) $(CC_FLAGS) -c $(DRIVERS)/mouse.c -o $(BUILD)/mouse.o
 
-$(BUILD)/disk.o : $(DRIVERS)/disk.c
-	$(CC) $(CC_FLAGS) -c $(DRIVERS)/disk.c -o $(BUILD)/disk.o
+# Kernel core files
+$(BUILD)/kernel.o : $(KERNEL)/core/kernel.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/kernel.c -o $(BUILD)/kernel.o
 
-$(BUILD)/sound.o : $(DRIVERS)/sound.c
-	$(CC) $(CC_FLAGS) -c $(DRIVERS)/sound.c -o $(BUILD)/sound.o
+$(BUILD)/memory.o : $(KERNEL)/core/memory.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/memory.c -o $(BUILD)/memory.o
+
+$(BUILD)/task.o : $(KERNEL)/core/task.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/task.c -o $(BUILD)/task.o
+
+$(BUILD)/process.o : $(KERNEL)/core/process.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/process.c -o $(BUILD)/process.o
+
+# Kernel architecture files
+$(BUILD)/io_ports.o : $(KERNEL)/arch/io_ports.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/io_ports.c -o $(BUILD)/io_ports.o
+
+$(BUILD)/gdt.o : $(KERNEL)/arch/gdt.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/gdt.c -o $(BUILD)/gdt.o
+
+$(BUILD)/idt.o : $(KERNEL)/arch/idt.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/idt.c -o $(BUILD)/idt.o
+
+$(BUILD)/isr.o : $(KERNEL)/arch/isr.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/isr.c -o $(BUILD)/isr.o
+
+$(BUILD)/8259_pic.o : $(KERNEL)/arch/8259_pic.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/8259_pic.c -o $(BUILD)/8259_pic.o
+
+$(BUILD)/pci.o : $(KERNEL)/arch/pci.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/pci.c -o $(BUILD)/pci.o
+
+# Kernel IPC files
+$(BUILD)/ipc.o : $(KERNEL)/ipc/ipc.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/ipc/ipc.c -o $(BUILD)/ipc.o
+
+$(BUILD)/shm.o : $(KERNEL)/ipc/shm.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/ipc/shm.c -o $(BUILD)/shm.o
+
+# Kernel syscall files
+$(BUILD)/syscall_c.o : $(KERNEL)/syscall/syscall.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/syscall/syscall.c -o $(BUILD)/syscall_c.o
+
+$(BUILD)/usermode.o : $(KERNEL)/syscall/usermode.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/syscall/usermode.c -o $(BUILD)/usermode.o
+
+# Kernel UX files
+$(BUILD)/ux.o : $(KERNEL)/ux/ux.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/ux/ux.c -o $(BUILD)/ux.o
+
+# Kernel browser files
+$(BUILD)/network.o : $(KERNEL)/browser/network.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/network.c -o $(BUILD)/network.o
+
+$(BUILD)/html.o : $(KERNEL)/browser/html.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/html.c -o $(BUILD)/html.o
+
+$(BUILD)/layout.o : $(KERNEL)/browser/layout.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/layout.c -o $(BUILD)/layout.o
+
+
+
+# Input drivers
+$(BUILD)/keyboard.o : $(DRIVERS)/input/keyboard.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/keyboard.c -o $(BUILD)/keyboard.o
+
+$(BUILD)/mouse.o : $(DRIVERS)/input/mouse.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/mouse.c -o $(BUILD)/mouse.o
+
+$(BUILD)/input.o : $(DRIVERS)/input/input.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/input.c -o $(BUILD)/input.o
+
+# Video drivers
+$(BUILD)/video.o : $(DRIVERS)/video/video.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/video.c -o $(BUILD)/video.o
+
+$(BUILD)/graphics.o : $(DRIVERS)/video/graphics.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/graphics.c -o $(BUILD)/graphics.o
+
+$(BUILD)/ui.o : $(DRIVERS)/video/ui.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/ui.c -o $(BUILD)/ui.o
+
+# Storage drivers
+$(BUILD)/disk.o : $(DRIVERS)/storage/disk.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/storage/disk.c -o $(BUILD)/disk.o
+
+# Audio drivers
+$(BUILD)/sound.o : $(DRIVERS)/audio/sound.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/audio/sound.c -o $(BUILD)/sound.o
+
+# Network drivers
+$(BUILD)/rtl8139.o : $(DRIVERS)/network/rtl8139.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/rtl8139.c -o $(BUILD)/rtl8139.o
+
+$(BUILD)/ethernet.o : $(DRIVERS)/network/ethernet.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/ethernet.c -o $(BUILD)/ethernet.o
+
+$(BUILD)/arp.o : $(DRIVERS)/network/arp.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/arp.c -o $(BUILD)/arp.o
+
+$(BUILD)/ip.o : $(DRIVERS)/network/ip.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/ip.c -o $(BUILD)/ip.o
+
+$(BUILD)/icmp.o : $(DRIVERS)/network/icmp.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/icmp.c -o $(BUILD)/icmp.o
 
 
 
