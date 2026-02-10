@@ -2,6 +2,7 @@ section .text
     global load_gdt
     global detect_v86
     global enter_v86
+    global tss_flush
 
 load_gdt:
     mov eax, [esp + 4]
@@ -23,6 +24,10 @@ load_gdt:
 far_jump:
     ret
 
+tss_flush:
+    mov ax, 0x28    ; TSS segment selector (index 5, RPL=0)
+    ltr ax
+    ret
 
 detect_v86:
    smsw    ax

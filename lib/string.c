@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 #include "string.h"
 #include "types.h"
 #include "io_ports.h"
@@ -36,7 +37,7 @@ int strlen(const char *s) {
     return len;
 }
 
-int strcmp(const char *s1, char *s2) {
+int strcmp(const char *s1, const char *s2) {
     int i = 0;
 
     while ((s1[i] == s2[i])) {
@@ -130,4 +131,17 @@ char *strncpy(char *dest, const char *src, int n) {
         dest[i] = '\0';
     }
     return dest;
+}
+
+const char *strchr(const char *s, int c) {
+    while (*s != '\0') {
+        if (*s == (char)c) {
+            return s;
+        }
+        s++;
+    }
+    if ((char)c == '\0') {
+        return s;
+    }
+    return NULL;
 }
