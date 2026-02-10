@@ -2,6 +2,9 @@
 #include "memory.h"
 #include "string.h"
 
+// HTML text buffer size
+#define HTML_TEXT_MAX_LEN 256
+
 // Initialize layout engine
 void layout_init(void) {
     // No initialization needed
@@ -140,7 +143,7 @@ void layout_render_to_framebuffer(layout_tree_t* tree, framebuffer_t* fb) {
             uint32 char_y = box->y;
             const char* text = box->node->text;
             
-            for (uint32 i = 0; text[i] && i < 255; i++) {
+            for (uint32 i = 0; text[i] && i < (HTML_TEXT_MAX_LEN - 1); i++) {
                 if (text[i] != ' ') {
                     render_char(fb, text[i], char_x, char_y, text_color);
                 }
