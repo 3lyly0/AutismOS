@@ -7,10 +7,12 @@
 #include "arp.h"
 #include "ip.h"
 #include "icmp.h"
+#include "tcp.h"
 
 extern void ethernet_set_arp_callback(void (*)(uint8*, uint16));
 extern void ethernet_set_ip_callback(void (*)(uint8*, uint16));
 extern void ip_set_icmp_callback(void (*)(uint8*, uint16, uint32));
+extern void ip_set_tcp_callback(void (*)(uint8*, uint16, uint32));
 extern void rtl8139_set_receive_callback(void (*)(uint8*, uint16));
 
 void network_init(void) {
@@ -20,11 +22,13 @@ void network_init(void) {
     arp_init();
     ip_init();
     icmp_init();
+    tcp_init();
     
     rtl8139_set_receive_callback(ethernet_receive);
     ethernet_set_arp_callback(arp_receive);
     ethernet_set_ip_callback(ip_receive);
     ip_set_icmp_callback(icmp_receive);
+    ip_set_tcp_callback(tcp_receive);
     
     uint32 local_ip = (10 << 0) | (0 << 8) | (2 << 16) | (15 << 24);
     uint32 netmask = (255 << 0) | (255 << 8) | (255 << 16) | (0 << 24);
@@ -163,16 +167,30 @@ int ping_ip(const char* ip_address, ping_response_t* response) {
     
     uint32 dst_ip = parse_ip_string(ip_address);
     
+    // First try ICMP ping
     icmp_send_echo_request(dst_ip, 1, 1);
     
     uint32 src_ip = 0;
     if (icmp_wait_reply(&src_ip, 1000) == 0) {
         response->success = 1;
-        strncpy(response->message, "Ping successful - Host is reachable", sizeof(response->message) - 1);
-    } else {
-        response->success = 0;
-        strncpy(response->message, "Ping failed - No reply received", sizeof(response->message) - 1);
+        strncpy(response->message, "ICMP Ping OK - Host reachable", sizeof(response->message) - 1);
+        return 0;
     }
     
-    return 0;
+    // ICMP failed, try TCP connection to port 80
+    int tcp_result = tcp_test_connection(dst_ip);
+    if (tcp_result == 1) {
+        response->success = 1;
+        strncpy(response->message, "TCP Connect OK - Got HTTP response", sizeof(response->message) - 1);
+        return 0;
+    } else if (tcp_result == 0) {
+        response->success = 1;
+        strncpy(response->message, "TCP Connect OK - No HTTP data", sizeof(response->message) - 1);
+        return 0;
+    }
+    
+    // Both failed
+    response->success = 0;
+    strncpy(response->message, "Connection failed - Host unreachable", sizeof(response->message) - 1);
+    return -1;
 }

@@ -25,6 +25,7 @@ static uint32 netmask = 0;
 static uint16 ip_id = 0;
 
 static void (*icmp_callback)(uint8*, uint16, uint32) = NULL;
+static void (*tcp_callback)(uint8*, uint16, uint32) = NULL;
 
 void ip_init(void) {
 }
@@ -37,6 +38,14 @@ void ip_set_config(uint32 ip, uint32 nm, uint32 gw) {
 
 void ip_set_icmp_callback(void (*callback)(uint8*, uint16, uint32)) {
     icmp_callback = callback;
+}
+
+void ip_set_tcp_callback(void (*callback)(uint8*, uint16, uint32)) {
+    tcp_callback = callback;
+}
+
+uint32 ip_get_local(void) {
+    return local_ip;
 }
 
 static uint16 ip_checksum(uint16* data, int len) {
@@ -76,10 +85,29 @@ void ip_send(uint32 dst_ip, uint8 protocol, const uint8* payload, uint16 length)
     uint32 next_hop = ((dst_ip & netmask) == (local_ip & netmask)) ? dst_ip : gateway_ip;
     
     uint8 dst_mac[6];
-    if (arp_lookup(next_hop, dst_mac) == 0) {
-        ethernet_send(dst_mac, ETH_TYPE_IP, packet, sizeof(ip_header_t) + length);
-    } else {
+    
+    // Try ARP lookup, if fails send ARP request and retry
+    extern void rtl8139_poll_receive(void);
+    
+    for (int retry = 0; retry < 5; retry++) {
+        if (arp_lookup(next_hop, dst_mac) == 0) {
+            ethernet_send(dst_mac, ETH_TYPE_IP, packet, sizeof(ip_header_t) + length);
+            return;
+        }
+        
+        // ARP cache miss - send ARP request and wait
         arp_request(next_hop);
+        
+        // Wait for ARP reply with polling
+        for (int i = 0; i < 500; i++) {
+            rtl8139_poll_receive();
+            for (volatile int j = 0; j < 1000; j++);
+            
+            if (arp_lookup(next_hop, dst_mac) == 0) {
+                ethernet_send(dst_mac, ETH_TYPE_IP, packet, sizeof(ip_header_t) + length);
+                return;
+            }
+        }
     }
 }
 
@@ -96,6 +124,8 @@ void ip_receive(uint8* packet, uint16 length) {
     
     if (header->protocol == IP_PROTO_ICMP && icmp_callback) {
         icmp_callback(payload, payload_len, header->src_ip);
+    } else if (header->protocol == IP_PROTO_TCP && tcp_callback) {
+        tcp_callback(payload, payload_len, header->src_ip);
     }
 }
 

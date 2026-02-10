@@ -23,6 +23,10 @@
 #include "layout.h"
 #include "ux.h"
 #include "rtl8139.h"
+#include "desktop.h"
+#include "notepad.h"
+#include "mouse.h"
+#include "mouse.h"
 
 /* =========================
    Globals
@@ -131,8 +135,9 @@ void net_process(void) {
    ========================= */
 
 void renderer_process(void) {
-    const uint32 FB_W = 320;
-    const uint32 FB_H = 200;
+    // Use smaller framebuffer to reduce memory usage
+    const uint32 FB_W = 80;
+    const uint32 FB_H = 25;
     const uint32 FB_SIZE = FB_W * FB_H * sizeof(uint32);
 
     uint32 shm_id = sys_shm_create(FB_SIZE);
@@ -216,6 +221,39 @@ void kernel_main_process(void) {
 }
 
 /* =========================
+   DESKTOP PROCESS
+   ========================= */
+
+static volatile uint8 g_desktop_mode = 0;
+
+void desktop_process(void) {
+    desktop_init();
+    
+    // Create initial notepad window
+    notepad_create();
+    
+    desktop_draw();
+    g_desktop_mode = 1;
+    
+    for (;;) {
+        // Get mouse state from mouse driver
+        desktop_t* ds = desktop_get_state();
+        
+        // Always call mouse handler to detect button transitions (press AND release)
+        desktop_handle_mouse(ds->mouse_x, ds->mouse_y, ds->mouse_buttons);
+        
+        // Only draw when needed (mouse moved or needs_redraw)
+        desktop_draw();
+        
+        kernel_yield();
+    }
+}
+
+uint8 is_desktop_mode(void) {
+    return g_desktop_mode;
+}
+
+/* =========================
    KMAIN
    ========================= */
 
@@ -247,6 +285,7 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
 
     shm_init();
     input_init();
+    mouse_init();  // Initialize PS/2 mouse
     network_init();
     html_init();
     layout_init();
@@ -254,16 +293,20 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
     task_init();
     process_init();
 
-    process_create(net_process, 0);
-    pid_renderer = process_create(renderer_process, 0)->pid;
-    pid_browser  = process_create(browser_process, 0)->pid;
-    process_create(kernel_main_process, 0);
+    // Initialize desktop directly (skip process creation - simpler and works)
+    desktop_init();
+    notepad_create();
 
     beep();
     ux_finish_boot();
 
     asm volatile("sti");
 
-    for (;;)
+    // Run desktop in main loop
+    for (;;) {
+        desktop_t* ds = desktop_get_state();
+        desktop_handle_mouse(ds->mouse_x, ds->mouse_y, ds->mouse_buttons);
+        desktop_draw();
         asm volatile("hlt");
+    }
 }

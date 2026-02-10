@@ -12,8 +12,8 @@ void ux_init(void) {
     // Clear state
     memset(&g_ux_state, 0, sizeof(ux_state_t));
     
-    // Set defaults
-    strncpy(g_ux_state.last_ip, "192.168.1.1", sizeof(g_ux_state.last_ip) - 1);
+    // Set defaults - use QEMU gateway IP as default (more likely to respond)
+    strncpy(g_ux_state.last_ip, "10.0.2.2", sizeof(g_ux_state.last_ip) - 1);
     g_ux_state.last_ip[sizeof(g_ux_state.last_ip) - 1] = '\0';
     g_ux_state.active_process = 1; // Browser process by default
     g_ux_state.boot_complete = 0;
@@ -28,14 +28,8 @@ void ux_init(void) {
 // Show clean boot screen
 void ux_show_boot_screen(void) {
     graphics_clear_screen(COLOR_BLACK);
-    draw_text(2, 2, "  █████╗ ██╗   ██╗████████╗██╗███████╗███╗   ███╗ ██████╗ ███████╗", COLOR_LIGHT_CYAN);
-    draw_text(2, 3, " ██╔══██╗██║   ██║╚══██╔══╝██║██╔════╝████╗ ████║██╔═══██╗██╔════╝", COLOR_LIGHT_CYAN);
-    draw_text(2, 4, " ███████║██║   ██║   ██║   ██║███████╗██╔████╔██║██║   ██║███████╗", COLOR_LIGHT_CYAN);
-    draw_text(2, 5, " ██╔══██║██║   ██║   ██║   ██║╚════██║██║╚██╔╝██║██║   ██║╚════██║", COLOR_LIGHT_CYAN);
-    draw_text(2, 6, " ██║  ██║╚██████╔╝   ██║   ██║███████║██║ ╚═╝ ██║╚██████╔╝███████║", COLOR_LIGHT_CYAN);
-    draw_text(2, 7, " ╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚══════╝", COLOR_LIGHT_CYAN);
-    draw_text(20, 9, "Network Ping Utility", COLOR_WHITE);
-    draw_text(2, 11, "  Booting...", COLOR_YELLOW);
+    draw_text(30, 10, "AutismOS v1.0", COLOR_LIGHT_CYAN);
+    draw_text(28, 12, "Booting Desktop...", COLOR_YELLOW);
 }
 
 // Initialize UI components (Step 9)
@@ -86,12 +80,7 @@ void ux_show_ready_screen(void) {
 void ux_finish_boot(void) {
     g_ux_state.boot_complete = 1;
     g_ux_state.silent_mode = 1;
-    
-    // Initialize graphical UI (Step 9)
-    ux_init_ui();
-    
-    // Show ready screen with textbox
-    ux_show_ready_screen();
+    // Desktop process will handle the UI now
 }
 
 // Handle keyboard input for UI (Step 9)
