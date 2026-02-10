@@ -209,5 +209,5 @@ void syscall_handler(REGISTERS *regs) {
 void syscall_init(void) {
     // Register syscall handler for interrupt 0x80
     isr_register_interrupt_handler(0x80, syscall_handler);
-    print("Syscall subsystem initialized (int 0x80)\n");
+    debug_print("Syscall subsystem initialized (int 0x80)\n");
 }

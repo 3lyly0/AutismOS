@@ -33,7 +33,7 @@ OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o\
 		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
 		$(BUILD)/input.o $(BUILD)/network.o $(BUILD)/html.o $(BUILD)/layout.o\
-		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/kernel.o\
+		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/kernel.o\
 		$(BUILD)/video.o $(BUILD)/disk.o $(BUILD)/sound.o
 
 
@@ -121,6 +121,10 @@ $(BUILD)/syscall_c.o : $(KERNEL)/syscall/syscall.c
 
 $(BUILD)/usermode.o : $(KERNEL)/syscall/usermode.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/syscall/usermode.c -o $(BUILD)/usermode.o
+
+# Kernel UX files
+$(BUILD)/ux.o : $(KERNEL)/ux/ux.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/ux/ux.c -o $(BUILD)/ux.o
 
 # Kernel browser files
 $(BUILD)/network.o : $(KERNEL)/browser/network.c
