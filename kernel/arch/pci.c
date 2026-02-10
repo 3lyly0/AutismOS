@@ -30,7 +30,7 @@ void pci_write_word(uint8 bus, uint8 slot, uint8 func, uint8 offset, uint16 valu
 }
 
 int pci_find_device(uint16 vendor_id, uint16 device_id, pci_device_t* dev) {
-    for (uint16 bus = 0; bus < 256; bus++) {
+    for (uint8 bus = 0; bus < 256; bus++) {
         for (uint8 slot = 0; slot < 32; slot++) {
             uint16 vendor = pci_read_word(bus, slot, 0, PCI_VENDOR_ID);
             if (vendor == 0xFFFF) continue;

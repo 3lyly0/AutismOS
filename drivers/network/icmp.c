@@ -69,6 +69,8 @@ void icmp_receive(uint8* packet, uint16 length, uint32 src_ip) {
     }
 }
 
+#define DELAY_ITERATIONS_PER_MS 10000
+
 int icmp_wait_reply(uint32* src_ip, uint32 timeout_ms) {
     extern void rtl8139_poll_receive(void);
     
@@ -82,7 +84,7 @@ int icmp_wait_reply(uint32* src_ip, uint32 timeout_ms) {
             return 0;
         }
         
-        for (volatile int j = 0; j < 10000; j++);
+        for (volatile int j = 0; j < DELAY_ITERATIONS_PER_MS; j++);
     }
     
     return -1;
