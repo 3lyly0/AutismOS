@@ -73,12 +73,22 @@ void arp_receive(uint8* packet, uint16 length) {
     uint16 op = (arp->op >> 8) | (arp->op << 8);
     
     if (arp->target_ip == local_ip) {
+        int found = 0;
         for (int i = 0; i < ARP_CACHE_SIZE; i++) {
-            if (!arp_cache[i].valid) {
-                arp_cache[i].ip = arp->sender_ip;
-                memcpy(arp_cache[i].mac, arp->sender_mac, 6);
-                arp_cache[i].valid = 1;
+            if (arp_cache[i].valid && arp_cache[i].ip == arp->sender_ip) {
+                found = 1;
                 break;
+            }
+        }
+        
+        if (!found) {
+            for (int i = 0; i < ARP_CACHE_SIZE; i++) {
+                if (!arp_cache[i].valid) {
+                    arp_cache[i].ip = arp->sender_ip;
+                    memcpy(arp_cache[i].mac, arp->sender_mac, 6);
+                    arp_cache[i].valid = 1;
+                    break;
+                }
             }
         }
         
