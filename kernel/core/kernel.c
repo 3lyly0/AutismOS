@@ -165,26 +165,26 @@ void browser_process(void) {
         }
     }
     
-    // Track last URL to detect changes
-    char last_submitted_url[256] = {0};
+    // Track last IP to detect changes
+    char last_submitted_ip[256] = {0};
     
     // Browser main event loop (Step 9)
     while (1) {
         browser_counter++;
         
-        // Check if user submitted a new URL (Step 9)
-        const char* current_url = ux_get_last_url();
-        if (current_url && current_url[0]) {
-            // Check if URL changed (user pressed Enter)
-            if (strcmp(last_submitted_url, current_url) != 0) {
-                // New URL submitted!
-                strcpy(last_submitted_url, current_url);
+        // Check if user submitted a new IP (Step 9)
+        const char* current_ip = ux_get_last_ip();
+        if (current_ip && current_ip[0]) {
+            // Check if IP changed (user pressed Enter)
+            if (strcmp(last_submitted_ip, current_ip) != 0) {
+                // New IP submitted!
+                strcpy(last_submitted_ip, current_ip);
                 browser_url_submitted = 1;
                 browser_page_loaded = 0;
                 
                 if (!ux_is_silent()) {
                     print("[Browser] User submitted IP: ");
-                    print(current_url);
+                    print(current_ip);
                     print("\n");
                 }
                 
@@ -203,7 +203,7 @@ void browser_process(void) {
                     graphics_clear_region(2, 14, 76, 9, COLOR_BLACK);
                     draw_text(3, 15, "Ping completed!", COLOR_LIGHT_GREEN);
                     draw_text(3, 17, "IP: ", COLOR_WHITE);
-                    draw_text(8, 17, last_submitted_url, COLOR_YELLOW);
+                    draw_text(8, 17, last_submitted_ip, COLOR_YELLOW);
                     
                     browser_page_loaded = 1;
                     
@@ -278,7 +278,7 @@ void renderer_process(void) {
         message_t msg;
         if (sys_poll_msg(&msg) == 0) {
             if (msg.type == MSG_TYPE_URL_REQUEST) {
-                const char* ip_str = ux_get_last_url();
+                const char* ip_str = ux_get_last_ip();
                 if (!ux_is_silent()) {
                     print("  [Renderer] Pinging ");
                     print(ip_str);

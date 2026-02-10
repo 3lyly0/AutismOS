@@ -13,7 +13,7 @@ void ux_init(void) {
     memset(&g_ux_state, 0, sizeof(ux_state_t));
     
     // Set defaults
-    strcpy(g_ux_state.last_url, "192.168.1.1");
+    strcpy(g_ux_state.last_ip, "192.168.1.1");
     g_ux_state.active_process = 1; // Browser process by default
     g_ux_state.boot_complete = 0;
     g_ux_state.silent_mode = 0;
@@ -47,8 +47,8 @@ void ux_init_ui(void) {
     textbox_init(&g_ux_state.url_textbox, 14, 5, 56, 3);
     
     // Pre-fill with last IP
-    if (g_ux_state.last_url[0]) {
-        strncpy(g_ux_state.url_textbox.buffer, g_ux_state.last_url, TEXTBOX_MAX_LEN - 1);
+    if (g_ux_state.last_ip[0]) {
+        strncpy(g_ux_state.url_textbox.buffer, g_ux_state.last_ip, TEXTBOX_MAX_LEN - 1);
         g_ux_state.url_textbox.cursor_pos = strlen(g_ux_state.url_textbox.buffer);
     }
     
@@ -120,7 +120,7 @@ void ux_handle_enter_key(void) {
     const char* ip = textbox_get_text(&g_ux_state.url_textbox);
     if (ip && ip[0]) {
         // Save the IP
-        ux_save_url(ip);
+        ux_save_ip(ip);
         
         // Show loading message in content area
         graphics_clear_region(2, 14, 76, 9, COLOR_BLACK);
@@ -152,16 +152,16 @@ uint8 ux_is_silent(void) {
     return g_ux_state.silent_mode;
 }
 
-// Persistence - URL
-void ux_save_url(const char* url) {
-    if (url) {
-        strncpy(g_ux_state.last_url, url, sizeof(g_ux_state.last_url) - 1);
-        g_ux_state.last_url[sizeof(g_ux_state.last_url) - 1] = '\0';
+// Persistence - IP address
+void ux_save_ip(const char* ip) {
+    if (ip) {
+        strncpy(g_ux_state.last_ip, ip, sizeof(g_ux_state.last_ip) - 1);
+        g_ux_state.last_ip[sizeof(g_ux_state.last_ip) - 1] = '\0';
     }
 }
 
-const char* ux_get_last_url(void) {
-    return g_ux_state.last_url;
+const char* ux_get_last_ip(void) {
+    return g_ux_state.last_ip;
 }
 
 // Persistence - Active process
