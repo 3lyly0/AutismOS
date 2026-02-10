@@ -54,7 +54,7 @@ extern void exception_31();
 extern void exception_128();
 
 
-extern void irq_0();
+extern void irq_0_with_task_switch();
 extern void irq_1();
 extern void irq_2();
 extern void irq_3();
