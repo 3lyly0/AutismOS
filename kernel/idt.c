@@ -52,7 +52,7 @@ void idt_init() {
     idt_set_entry(29, (uint32)exception_29, 0x08, 0x8E);
     idt_set_entry(30, (uint32)exception_30, 0x08, 0x8E);
     idt_set_entry(31, (uint32)exception_31, 0x08, 0x8E);
-    idt_set_entry(32, (uint32)irq_0, 0x08, 0x8E);
+    idt_set_entry(32, (uint32)irq_0_with_task_switch, 0x08, 0x8E);
     idt_set_entry(33, (uint32)irq_1, 0x08, 0x8E);
     idt_set_entry(34, (uint32)irq_2, 0x08, 0x8E);
     idt_set_entry(35, (uint32)irq_3, 0x08, 0x8E);
