@@ -20,8 +20,8 @@
 #define PAGE_USER       0x4
 
 static uint8_t memory_bitmap[BITMAP_SIZE];
-static uint32_t page_directory[PAGE_DIRECTORY_SIZE] __attribute__((aligned(4096)));
-static uint32_t first_page_table[PAGE_TABLE_SIZE] __attribute__((aligned(4096)));
+uint32_t page_directory[PAGE_DIRECTORY_SIZE] __attribute__((aligned(4096)));
+uint32_t first_page_table[PAGE_TABLE_SIZE] __attribute__((aligned(4096)));
 
 static uint32_t memory_end = 0;
 static uint8_t memory_initialized = 0;
@@ -153,7 +153,7 @@ void paging_init() {
         first_page_table[i] = phys_addr | PAGE_PRESENT | PAGE_WRITE;
     }
     
-    page_directory[0] = ((uint32_t)first_page_table) | PAGE_PRESENT | PAGE_WRITE;
+    page_directory[0] = ((uint32_t)first_page_table) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
     
     paging_initialized = 1;
     print("Paging structures initialized\n");
