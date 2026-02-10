@@ -17,6 +17,7 @@
 #include "syscall.h"
 #include "usermode.h"
 #include "user_program.h"
+#include "ipc.h"
 
 // Global tick counter for timer
 volatile uint64 g_timer_ticks = 0;
@@ -70,23 +71,85 @@ void idle_task(void) {
 // Busy-wait delay for task yield
 #define TASK_YIELD_DELAY 100000
 
-// Test process 1 - demonstrates process isolation
-volatile uint32 process1_counter = 0;
-void test_process_1(void) {
-    print("[Process 1 started]\n");
+// Message types for IPC demonstration
+#define MSG_TYPE_REQUEST    1
+#define MSG_TYPE_RESPONSE   2
+#define MSG_TYPE_RENDER     3
+#define MSG_TYPE_FRAME      4
+
+// Inline syscall wrappers for kernel mode (for demonstration)
+static inline int sys_send_msg(uint32 target_pid, uint32 type, uint32 data1, uint32 data2) {
+    message_t msg;
+    msg.sender_pid = 0;  // Will be set by syscall handler
+    msg.type = type;
+    msg.data1 = data1;
+    msg.data2 = data2;
+    
+    int result;
+    asm volatile("int $0x80" 
+                 : "=a"(result) 
+                 : "a"(SYS_SEND), "b"(target_pid), "c"(&msg));
+    return result;
+}
+
+static inline int sys_poll_msg(message_t* msg) {
+    int result;
+    asm volatile("int $0x80" 
+                 : "=a"(result) 
+                 : "a"(SYS_POLL), "b"(msg));
+    return result;
+}
+
+// Browser process - simulates browser control process
+volatile uint32 browser_counter = 0;
+void browser_process(void) {
+    print("[Browser Process] Started (simulates UI/control process)\n");
+    
+    uint32 renderer_pid = 0;  // Renderer was created first (PID 0)
+    uint32 frame_count = 0;
+    
     while (1) {
-        process1_counter++;
+        browser_counter++;
+        
+        // Every so often, send render request to renderer
+        if (browser_counter % 5 == 0) {
+            sys_send_msg(renderer_pid, MSG_TYPE_RENDER, frame_count++, 0);
+        }
+        
+        // Poll for responses from renderer
+        message_t msg;
+        if (sys_poll_msg(&msg) == 0) {
+            if (msg.type == MSG_TYPE_FRAME) {
+                // Received frame ready notification
+                // (In real browser, would composite to screen)
+            }
+        }
+        
         // Let other processes run
         for (volatile int i = 0; i < TASK_YIELD_DELAY; i++);
     }
 }
 
-// Test process 2 - demonstrates process isolation
-volatile uint32 process2_counter = 0;
-void test_process_2(void) {
-    print("[Process 2 started]\n");
+// Renderer process - simulates HTML/layout renderer
+volatile uint32 renderer_counter = 0;
+void renderer_process(void) {
+    print("[Renderer Process] Started (simulates HTML/layout engine)\n");
+    
     while (1) {
-        process2_counter++;
+        renderer_counter++;
+        
+        // Poll for render requests from browser
+        message_t msg;
+        if (sys_poll_msg(&msg) == 0) {
+            if (msg.type == MSG_TYPE_RENDER) {
+                // Received render request
+                // Do "rendering" work (just increment counter)
+                
+                // Send frame ready back to browser
+                sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME, msg.data1, 0);
+            }
+        }
+        
         // Let other processes run
         for (volatile int i = 0; i < TASK_YIELD_DELAY; i++);
     }
@@ -94,18 +157,18 @@ void test_process_2(void) {
 
 // Main kernel process - handles monitoring
 void kernel_main_process(void) {
-    print("Process isolation initialized. Processes are running.\n");
-    print("Process counters will increment in background.\n");
-    print("Monitoring process execution...\n\n");
+    print("IPC and messaging initialized. Processes communicating.\n");
+    print("Browser <-> Renderer IPC demonstration running.\n");
+    print("Monitoring process execution and message passing...\n\n");
     
     uint32 last_print_tick = 0;
     while (1) {
         // Print process status every PRINT_INTERVAL_TICKS
         if (g_timer_ticks - last_print_tick > PRINT_INTERVAL_TICKS) {
-            print("P1:");
-            print_hex(process1_counter);
-            print(" P2:");
-            print_hex(process2_counter);
+            print("Browser:");
+            print_hex(browser_counter);
+            print(" Renderer:");
+            print_hex(renderer_counter);
             print(" Ticks:");
             print_hex((uint32)g_timer_ticks);
             print("\n");
@@ -155,8 +218,8 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     tss_init(0x10, kernel_stack);
     print("TSS initialized\n");
     
-    print("\n=== Step 4: Processes & Address Spaces ===\n");
-    print("Demonstrating process abstraction with separate page directories\n\n");
+    print("\n=== Step 5: IPC, Messaging & Event-Driven Execution ===\n");
+    print("Demonstrating IPC between browser and renderer processes\n\n");
     
     // Initialize task subsystem first
     task_init();
@@ -164,32 +227,27 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     // Initialize process subsystem
     process_init();
     
-    // Create processes with their own page directories
-    print("Creating processes (each with own page directory)...\n");
-    process_t* proc1 = process_create(test_process_1, 0);
-    print("  -> Process 1: PID=");
-    print_hex(proc1->pid);
-    print(" PageDir=0x");
-    print_hex((uint32)proc1->page_dir);
-    print("\n");
+    // Create processes with IPC capabilities
+    print("Creating processes with message queues...\n");
+    process_t* renderer_proc = process_create(renderer_process, 0);
+    print("  -> Renderer process: PID=");
+    print_hex(renderer_proc->pid);
+    print(" (HTML/Layout engine)\n");
     
-    process_t* proc2 = process_create(test_process_2, 0);
-    print("  -> Process 2: PID=");
-    print_hex(proc2->pid);
-    print(" PageDir=0x");
-    print_hex((uint32)proc2->page_dir);
-    print("\n");
+    process_t* browser_proc = process_create(browser_process, 0);
+    print("  -> Browser process: PID=");
+    print_hex(browser_proc->pid);
+    print(" (UI/Control)\n");
     
     process_t* main_proc = process_create(kernel_main_process, 0);
-    print("  -> Main process: PID=");
+    print("  -> Monitor process: PID=");
     print_hex(main_proc->pid);
-    print(" PageDir=0x");
-    print_hex((uint32)main_proc->page_dir);
-    print("\n");
+    print(" (System monitor)\n");
     
-    print("\nNote: All processes have separate page directories.\n");
-    print("Kernel space is mapped identically in all directories.\n");
-    print("Process switching will change CR3 (page directory register).\n\n");
+    print("\nNote: Each process has its own message queue.\n");
+    print("Processes communicate via kernel-mediated IPC.\n");
+    print("Browser sends RENDER requests to Renderer.\n");
+    print("Renderer sends FRAME_READY responses back.\n\n");
     
     // Enable interrupts to start scheduling
     print("Enabling interrupts and starting process scheduling...\n\n");
