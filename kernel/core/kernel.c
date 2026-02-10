@@ -278,22 +278,42 @@ void renderer_process(void) {
         message_t msg;
         if (sys_poll_msg(&msg) == 0) {
             if (msg.type == MSG_TYPE_URL_REQUEST) {
+                const char* url_str = ux_get_last_url();
                 if (!ux_is_silent()) {
                     print("  [Renderer] Fetching ");
-                    print(ux_get_last_url());
+                    print(url_str);
                     print("...\n");
                 }
                 
-                // Step 7.1: Fetch page via network
+                // Step 7.1: Parse the URL
+                url_t parsed_url;
+                if (parse_url(url_str, &parsed_url) != 0) {
+                    if (!ux_is_silent()) {
+                        print("  [Renderer] Failed to parse URL\n");
+                    }
+                    // Send frame ready anyway to avoid hanging
+                    sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME_READY, 0, shm_id);
+                    continue;
+                }
+                
+                if (!ux_is_silent()) {
+                    print("  [Renderer] Parsed host: ");
+                    print(parsed_url.host);
+                    print(", path: ");
+                    print(parsed_url.path);
+                    print("\n");
+                }
+                
+                // Step 7.2: Fetch page via network
                 net_response_t response;
-                if (http_get("example.com", "/", &response) == 0) {
-                    // Step 7.2: Parse HTML (silently)
+                if (http_get(parsed_url.host, parsed_url.path, &response) == 0) {
+                    // Step 7.3: Parse HTML (silently)
                     html_node_t* html_tree = html_parse(response.content);
                     if (html_tree) {
-                        // Step 7.3: Create layout (silently)
+                        // Step 7.4: Create layout (silently)
                         layout_tree_t* layout = layout_create_tree(html_tree, FB_WIDTH);
                         if (layout) {
-                            // Step 7.4: Render to framebuffer (silently)
+                            // Step 7.5: Render to framebuffer (silently)
                             framebuffer_t fb;
                             fb.width = FB_WIDTH;
                             fb.height = FB_HEIGHT;
