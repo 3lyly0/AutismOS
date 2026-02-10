@@ -32,18 +32,30 @@ volatile uint64 g_timer_ticks = 0;
 volatile uint32 g_framebuffer_shm_id = 0;
 volatile ping_response_t g_ping_response;
 
-volatile uint32 browser_counter  = 0;
+volatile uint32 browser_counter = 0;
 volatile uint32 renderer_counter = 0;
 volatile uint32 browser_page_loaded = 0;
+
+/* PIDs */
+static uint32 pid_renderer = 0;
+static uint32 pid_browser  = 0;
 
 /* =========================
    Timer IRQ
    ========================= */
 
-void timer_interrupt_handler(REGISTERS *regs) {
-    (void)regs;
+void timer_interrupt_handler(REGISTERS* r) {
+    (void)r;
     g_timer_ticks++;
     ux_update_caret();
+}
+
+/* =========================
+   Yield (guaranteed)
+   ========================= */
+
+static inline void kernel_yield(void) {
+    asm volatile("int $0x20");
 }
 
 /* =========================
@@ -51,7 +63,8 @@ void timer_interrupt_handler(REGISTERS *regs) {
    ========================= */
 
 static inline int sys_send_msg(uint32 pid, uint32 type, uint32 d1, uint32 d2) {
-    message_t msg = {0};
+    message_t msg;
+    memset(&msg, 0, sizeof(msg));
     msg.type  = type;
     msg.data1 = d1;
     msg.data2 = d2;
@@ -88,13 +101,13 @@ static inline int sys_shm_map(uint32 id, void** out) {
 }
 
 /* =========================
-   NETWORK PROCESS (IMPORTANT)
+   NETWORK PROCESS
    ========================= */
 
 void net_process(void) {
     for (;;) {
         rtl8139_poll_receive();
-        task_yield();
+        kernel_yield();
     }
 }
 
@@ -110,7 +123,7 @@ void renderer_process(void) {
     uint32 shm_id = sys_shm_create(FB_SIZE);
     g_framebuffer_shm_id = shm_id;
 
-    uint32* pixels = 0;
+    uint32* pixels = NULL;
     sys_shm_map(shm_id, (void**)&pixels);
 
     for (;;) {
@@ -118,9 +131,11 @@ void renderer_process(void) {
 
         message_t msg;
         if (sys_poll_msg(&msg) == 0 && msg.type == 6 /* URL REQUEST */) {
+
             const char* ip = ux_get_last_ip();
 
             ping_response_t resp;
+            memset(&resp, 0, sizeof(resp));
             ping_ip(ip, &resp);
             g_ping_response = resp;
 
@@ -130,7 +145,7 @@ void renderer_process(void) {
             sys_send_msg(msg.sender_pid, 5 /* FRAME READY */, 0, shm_id);
         }
 
-        task_yield();
+        kernel_yield();
     }
 }
 
@@ -142,20 +157,21 @@ void browser_process(void) {
     char last_ip[64] = {0};
 
     while (!g_framebuffer_shm_id)
-        task_yield();
+        kernel_yield();
 
     for (;;) {
         browser_counter++;
 
         const char* ip = ux_get_last_ip();
-        if (ip && strcmp(ip, last_ip) != 0) {
-            strcpy(last_ip, ip);
+        if (ip && ip[0] && strcmp(ip, last_ip) != 0) {
+            strncpy(last_ip, ip, sizeof(last_ip) - 1);
             browser_page_loaded = 0;
-            sys_send_msg(0, 6 /* URL REQUEST */, 0, 0);
+            sys_send_msg(pid_renderer, 6 /* URL REQUEST */, 0, 0);
         }
 
         message_t msg;
-        if (sys_poll_msg(&msg) == 0 && msg.type == 5) {
+        if (sys_poll_msg(&msg) == 0 && msg.type == 5 /* FRAME READY */) {
+
             graphics_clear_region(2, 14, 76, 9, COLOR_BLACK);
 
             if (g_ping_response.success)
@@ -164,12 +180,14 @@ void browser_process(void) {
                 draw_text(3, 15, "Ping failed", COLOR_LIGHT_RED);
 
             draw_text(3, 17, "Message:", COLOR_WHITE);
-            draw_text(12, 17, g_ping_response.message, COLOR_LIGHT_GRAY);
+            draw_text(12, 17,
+                      (const char*)g_ping_response.message,
+                      COLOR_LIGHT_GRAY);
 
             browser_page_loaded = 1;
         }
 
-        task_yield();
+        kernel_yield();
     }
 }
 
@@ -178,9 +196,8 @@ void browser_process(void) {
    ========================= */
 
 void kernel_main_process(void) {
-    for (;;) {
-        task_yield();
-    }
+    for (;;)
+        kernel_yield();
 }
 
 /* =========================
@@ -193,7 +210,10 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
 
     gdt_init();
     idt_init();
-    isr_register_interrupt_handler(IRQ_BASE + IRQ0_TIMER, timer_interrupt_handler);
+    isr_register_interrupt_handler(
+        IRQ_BASE + IRQ0_TIMER,
+        timer_interrupt_handler
+    );
 
     if (magic != MULTIBOOT_MAGIC)
         kernel_panic("Invalid multiboot magic");
@@ -220,8 +240,8 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
     process_init();
 
     process_create(net_process, 0);
-    process_create(renderer_process, 0);
-    process_create(browser_process, 0);
+    pid_renderer = process_create(renderer_process, 0)->pid;
+    pid_browser  = process_create(browser_process, 0)->pid;
     process_create(kernel_main_process, 0);
 
     beep();
