@@ -67,8 +67,8 @@ uint8 ux_is_silent(void) {
 // Persistence - URL
 void ux_save_url(const char* url) {
     if (url) {
-        strncpy(g_ux_state.last_url, url, 255);
-        g_ux_state.last_url[255] = '\0';
+        strncpy(g_ux_state.last_url, url, sizeof(g_ux_state.last_url) - 1);
+        g_ux_state.last_url[sizeof(g_ux_state.last_url) - 1] = '\0';
     }
 }
 
