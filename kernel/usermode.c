@@ -4,6 +4,11 @@
 #include "string.h"
 #include "kernel.h"
 
+// Page flags from memory.h
+#define PAGE_PRESENT    0x1
+#define PAGE_WRITE      0x2
+#define PAGE_USER       0x4
+
 // User space allocator - simple bump allocator
 static void* user_heap_current = NULL;
 
@@ -46,7 +51,7 @@ void* allocate_user_memory(uint32 size) {
         if (page_index < 1024) {
             // Map to physical address (identity mapping for now)
             // Set as present, writable, and user-accessible
-            first_page_table[page_index] = addr | 0x07; // Present | Write | User
+            first_page_table[page_index] = addr | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
         }
     }
     
@@ -55,8 +60,8 @@ void* allocate_user_memory(uint32 size) {
         asm volatile("invlpg (%0)" :: "r"(addr) : "memory");
     }
     
-    // Clear the allocated memory
-    memset(result, 0, size);
+    // Clear the allocated memory (full aligned size to prevent memory leaks)
+    memset(result, 0, aligned_size);
     
     return result;
 }
