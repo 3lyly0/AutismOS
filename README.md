@@ -294,3 +294,51 @@ Contributions are welcome! Feel free to open issues or submit pull requests to i
 
 ### **License**
 This project is licensed under the GNU General Public License (GPL) Version 3. See the `LICENSE` file for details.
+
+---
+
+## **Step 9: How to Experience the Interactive UI**
+
+The interactive UI is best experienced by running AutismOS in QEMU with a graphical display:
+
+### **Interactive Mode (Recommended)**
+```bash
+# Build the OS
+make
+
+# Run with graphical display
+qemu-system-x86_64 -cdrom autismos.iso
+```
+
+This opens a window showing:
+1. **Boot screen** with AutismOS ASCII art logo
+2. **Interactive browser** with URL textbox
+3. **Blinking cursor** in the input field
+4. **Live typing** - characters appear as you type
+5. **Content area** for page display
+
+### **Keyboard Interaction**
+When the QEMU window has focus:
+- **Type** - Characters appear in the URL textbox
+- **Backspace** - Delete characters
+- **Enter** - Submit URL and load page
+- **Alt+B** - Focus browser (already focused by default)
+- **Alt+Q** - Quit
+
+### **Headless Mode (Debug)**
+```bash
+# Run without display (serial output only)
+qemu-system-x86_64 -cdrom autismos.iso -serial stdio -nographic
+```
+
+Note: In headless mode, you'll only see kernel debug output. The interactive UI requires a graphical display to fully experience.
+
+### **What You'll Notice**
+- ✨ **Immediate feedback** - Type and see characters instantly
+- ✨ **Blinking cursor** - Shows system is alive and ready
+- ✨ **Visual structure** - Clear UI layout with borders
+- ✨ **No screen clears** - Updates happen in-place
+- ✨ **Professional feel** - System responds like a real OS
+
+This is the **emotional turning point** where AutismOS transforms from a technical demo into something that feels genuinely usable.
+
