@@ -211,10 +211,6 @@ void *kmalloc(size_t size) {
         kernel_panic("kmalloc OOM - heap exhausted");
     }
     
-    if (result == NULL) {
-        kernel_panic("kmalloc returned NULL");
-    }
-    
     return result;
 }
 
