@@ -8,7 +8,7 @@
 
 
 #define PAGE_SIZE 4096
-#define MEMORY_SIZE 0x1000000
+#define MEMORY_SIZE 0x400000  // 4MB - limited by single page table (1024 entries * 4KB)
 #define BITMAP_SIZE (MEMORY_SIZE / PAGE_SIZE / 8)
 #define TOTAL_PAGES (MEMORY_SIZE / PAGE_SIZE)
 
@@ -145,11 +145,11 @@ void paging_init() {
     memset(&kernel_page_directory, 0, sizeof(kernel_page_directory));
     memset(first_page_table, 0, sizeof(first_page_table));
     
-    // Map all available usable memory with identity paging
-    // This ensures that virtual addresses = physical addresses for kernel code and heap
-    // Use memory_end that was detected from multiboot memory map
-    uint32_t pages_to_map = memory_end / PAGE_SIZE;
+    // Map enough memory for the heap and kernel code
+    // The heap is limited to MEMORY_SIZE, so we need to map at least that much
+    uint32_t pages_to_map = MEMORY_SIZE / PAGE_SIZE;
     
+    // Can't map more than one page table can handle (1024 entries = 4MB)
     if (pages_to_map > PAGE_TABLE_SIZE) {
         pages_to_map = PAGE_TABLE_SIZE;
     }
