@@ -13,7 +13,8 @@ void ux_init(void) {
     memset(&g_ux_state, 0, sizeof(ux_state_t));
     
     // Set defaults
-    strcpy(g_ux_state.last_ip, "192.168.1.1");
+    strncpy(g_ux_state.last_ip, "192.168.1.1", sizeof(g_ux_state.last_ip) - 1);
+    g_ux_state.last_ip[sizeof(g_ux_state.last_ip) - 1] = '\0';
     g_ux_state.active_process = 1; // Browser process by default
     g_ux_state.boot_complete = 0;
     g_ux_state.silent_mode = 0;
