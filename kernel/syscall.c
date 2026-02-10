@@ -7,6 +7,21 @@
 #include "ipc.h"
 #include "task.h"
 
+// Helper function to validate pointer is accessible
+// For now, we just check it's not NULL and is aligned
+// In a full implementation, this would check page tables
+static inline int is_valid_pointer(void* ptr, uint32 size) {
+    if (!ptr) return 0;  // NULL pointer
+    uint32 addr = (uint32)ptr;
+    // Check alignment for message_t (should be 4-byte aligned)
+    if (addr % 4 != 0) return 0;
+    // Basic sanity check - not in first page (NULL dereference protection)
+    if (addr < 0x1000) return 0;
+    // Check it doesn't overflow
+    if (addr + size < addr) return 0;  // Overflow
+    return 1;  // Appears valid
+}
+
 // Syscall handler - called when user mode executes int 0x80
 void syscall_handler(REGISTERS *regs) {
     // Get current process for context
@@ -55,6 +70,12 @@ void syscall_handler(REGISTERS *regs) {
             uint32 target_pid = regs->ebx;
             message_t* msg = (message_t*)regs->ecx;
             
+            // Validate pointer before dereferencing
+            if (!is_valid_pointer(msg, sizeof(message_t))) {
+                regs->eax = -1;  // Invalid pointer
+                break;
+            }
+            
             // Find target process
             process_t* target = process_find_by_pid(target_pid);
             if (!target) {
@@ -83,6 +104,12 @@ void syscall_handler(REGISTERS *regs) {
             // EBX = pointer to message_t structure to fill
             message_t* msg = (message_t*)regs->ebx;
             
+            // Validate pointer before writing to it
+            if (!is_valid_pointer(msg, sizeof(message_t))) {
+                regs->eax = -1;  // Invalid pointer
+                break;
+            }
+            
             if (!current) {
                 regs->eax = -1;
                 break;
@@ -108,6 +135,12 @@ void syscall_handler(REGISTERS *regs) {
             // SYS_POLL: Check for IPC message (non-blocking)
             // EBX = pointer to message_t structure to fill
             message_t* msg = (message_t*)regs->ebx;
+            
+            // Validate pointer before writing to it
+            if (!is_valid_pointer(msg, sizeof(message_t))) {
+                regs->eax = -1;  // Invalid pointer
+                break;
+            }
             
             if (!current) {
                 regs->eax = -1;
