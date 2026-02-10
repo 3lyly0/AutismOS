@@ -40,6 +40,21 @@ volatile uint32 browser_page_loaded = 0;
 static uint32 pid_renderer = 0;
 static uint32 pid_browser  = 0;
 
+
+
+void kernel_panic(const char* message) {
+    asm volatile("cli");
+
+    print("\n\n*** KERNEL PANIC ***\n");
+    print(message);
+    print("\nSystem halted.\n");
+
+    for (;;)
+        asm volatile("hlt");
+}
+
+
+
 /* =========================
    Timer IRQ
    ========================= */
