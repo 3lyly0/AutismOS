@@ -105,6 +105,16 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
                 if (g_alt_pressed && g_ch != 0) {
                     ux_handle_hotkey(g_ch);
                 }
+                // Step 9: Route input to UX for UI handling
+                else if (g_ch != 0) {
+                    // Handle Enter key specially
+                    if (g_ch == '\n') {
+                        ux_handle_enter_key();
+                    } else {
+                        // Regular character input
+                        ux_handle_key_input(g_ch);
+                    }
+                }
                 break;
         }
     }
