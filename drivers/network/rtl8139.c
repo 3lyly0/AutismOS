@@ -53,10 +53,13 @@ void rtl8139_init(void) {
     pci_device_t dev;
 
     if (pci_find_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID, &dev) != 0) {
-        return;
+        return;  // No RTL8139 found, skip
     }
 
     io_base = dev.bar0 & ~3;
+    if (io_base == 0) {
+        return;  // Invalid IO base
+    }
 
     uint16 cmd = pci_read_word(dev.bus, dev.slot, dev.func, PCI_COMMAND);
     cmd |= PCI_CMD_IO | PCI_CMD_BUS_MASTER;
@@ -65,7 +68,16 @@ void rtl8139_init(void) {
     w8(REG_CONFIG1, 0x00);
 
     w8(REG_CMD, CMD_RESET);
-    while (r8(REG_CMD) & CMD_RESET);
+    
+    // Wait for reset with timeout
+    volatile int timeout = 100000;
+    while ((r8(REG_CMD) & CMD_RESET) && timeout > 0) {
+        timeout--;
+    }
+    if (timeout <= 0) {
+        io_base = 0;  // Reset failed
+        return;
+    }
 
     for (int i = 0; i < 6; i++) {
         mac_address[i] = r8(REG_MAC0 + i);

@@ -24,7 +24,6 @@ void process_init(void) {
     current_process = NULL;
     process_list_head = NULL;
     next_pid = 0;
-    debug_print("Process subsystem initialized\n");
 }
 
 // Process creation with user space support
@@ -32,7 +31,7 @@ process_t* process_create(void (*entry_point)(void), uint32 is_user_mode) {
     // Allocate process structure
     process_t* new_process = (process_t*)kmalloc(sizeof(process_t));
     if (!new_process) {
-        kernel_panic("Failed to allocate process structure");
+        return NULL;
     }
     
     memset(new_process, 0, sizeof(process_t));
@@ -45,7 +44,7 @@ process_t* process_create(void (*entry_point)(void), uint32 is_user_mode) {
     new_process->page_dir = create_page_directory();
     if (!new_process->page_dir) {
         kfree(new_process);
-        kernel_panic("Failed to create page directory for process");
+        return NULL;
     }
     
     // If this is a user mode process, we'd set up user space here
@@ -57,7 +56,7 @@ process_t* process_create(void (*entry_point)(void), uint32 is_user_mode) {
     new_process->main_thread = task_create(entry_point);
     if (!new_process->main_thread) {
         kfree(new_process);
-        kernel_panic("Failed to create main thread for process");
+        return NULL;
     }
     
     // Link task back to process
@@ -78,12 +77,6 @@ process_t* process_create(void (*entry_point)(void), uint32 is_user_mode) {
         last->next = new_process;
         new_process->next = process_list_head;
     }
-    
-    debug_print("Process created: PID=");
-    debug_print_hex(new_process->pid);
-    debug_print(" PageDir=0x");
-    debug_print_hex((uint32)new_process->page_dir);
-    debug_print("\n");
     
     return new_process;
 }

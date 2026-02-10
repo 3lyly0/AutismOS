@@ -28,14 +28,17 @@ TARGET_ISO=autismos.iso
 ISO_DIR=isodir
 
 
+APPS = apps
+
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o $(BUILD)/syscall.o $(BUILD)/user_program_asm.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o $(BUILD)/pci.o\
 		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
 		$(BUILD)/input.o $(BUILD)/network.o $(BUILD)/html.o $(BUILD)/layout.o\
-		$(BUILD)/rtl8139.o $(BUILD)/ethernet.o $(BUILD)/arp.o $(BUILD)/ip.o $(BUILD)/icmp.o\
-		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/kernel.o\
-		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/disk.o $(BUILD)/sound.o
+		$(BUILD)/rtl8139.o $(BUILD)/ethernet.o $(BUILD)/arp.o $(BUILD)/ip.o $(BUILD)/icmp.o $(BUILD)/tcp.o\
+		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/desktop.o $(BUILD)/kernel.o\
+		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/disk.o $(BUILD)/sound.o\
+		$(BUILD)/notepad.o $(BUILD)/calculator.o $(BUILD)/sysinfo.o
 
 
 all: $(BUILD) $(OBJECTS)
@@ -130,6 +133,9 @@ $(BUILD)/usermode.o : $(KERNEL)/syscall/usermode.c
 $(BUILD)/ux.o : $(KERNEL)/ux/ux.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/ux/ux.c -o $(BUILD)/ux.o
 
+$(BUILD)/desktop.o : $(KERNEL)/ux/desktop.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/ux/desktop.c -o $(BUILD)/desktop.o
+
 # Kernel browser files
 $(BUILD)/network.o : $(KERNEL)/browser/network.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/network.c -o $(BUILD)/network.o
@@ -186,8 +192,19 @@ $(BUILD)/ip.o : $(DRIVERS)/network/ip.c
 $(BUILD)/icmp.o : $(DRIVERS)/network/icmp.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/icmp.c -o $(BUILD)/icmp.o
 
+$(BUILD)/tcp.o : $(DRIVERS)/network/tcp.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/tcp.c -o $(BUILD)/tcp.o
 
 
 $(BUILD)/string.o : $(LIB)/string.c
 	$(CC) $(CC_FLAGS) -c $(LIB)/string.c -o $(BUILD)/string.o
 
+# Apps
+$(BUILD)/notepad.o : $(APPS)/notepad.c
+	$(CC) $(CC_FLAGS) -c $(APPS)/notepad.c -o $(BUILD)/notepad.o
+
+$(BUILD)/calculator.o : $(APPS)/calculator.c
+	$(CC) $(CC_FLAGS) -c $(APPS)/calculator.c -o $(BUILD)/calculator.o
+
+$(BUILD)/sysinfo.o : $(APPS)/sysinfo.c
+	$(CC) $(CC_FLAGS) -c $(APPS)/sysinfo.c -o $(BUILD)/sysinfo.o

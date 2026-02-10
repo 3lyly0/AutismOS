@@ -130,28 +130,7 @@ void isr_exception_handler(REGISTERS reg) {
         print_hex(reg.int_no);
         print("\nError code: ");
         print_hex(reg.err_code);
-        
-        if (reg.int_no == 14) {
-            uint32 fault_addr;
-            asm volatile("mov %%cr2, %0" : "=r"(fault_addr));
-            print("\n\nPAGE FAULT\n");
-            print("Address: 0x");
-            print_hex(fault_addr);
-            print("\nError code: 0x");
-            print_hex(reg.err_code);
-            print("\n  ");
-            if (reg.err_code & 0x1) print("Present ");
-            else print("Not-present ");
-            if (reg.err_code & 0x2) print("Write ");
-            else print("Read ");
-            if (reg.err_code & 0x4) print("User-mode ");
-            else print("Kernel-mode ");
-            if (reg.err_code & 0x8) print("Reserved-bit ");
-            if (reg.err_code & 0x10) print("Instruction-fetch ");
-            print("\n");
-        }
-        
-        print("EIP: ");
+        print("\nEIP: ");
         print_hex(reg.eip);
         print("\n");
         
