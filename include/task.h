@@ -7,7 +7,8 @@
 typedef enum {
     TASK_READY,
     TASK_RUNNING,
-    TASK_BLOCKED
+    TASK_BLOCKED,
+    TASK_WAITING    // Waiting for IPC message (Step 5)
 } task_state_t;
 
 // Minimum viable task structure
