@@ -13,6 +13,7 @@
 #include "disk.h"
 #include "sound.h"
 #include "task.h"
+#include "process.h"
 #include "syscall.h"
 #include "usermode.h"
 #include "user_program.h"
@@ -69,42 +70,42 @@ void idle_task(void) {
 // Busy-wait delay for task yield
 #define TASK_YIELD_DELAY 100000
 
-// Test task 1 - demonstrates multitasking
-volatile uint32 task1_counter = 0;
-void test_task_1(void) {
-    print("[Task 1 started]\n");
+// Test process 1 - demonstrates process isolation
+volatile uint32 process1_counter = 0;
+void test_process_1(void) {
+    print("[Process 1 started]\n");
     while (1) {
-        task1_counter++;
-        // Let other tasks run
+        process1_counter++;
+        // Let other processes run
         for (volatile int i = 0; i < TASK_YIELD_DELAY; i++);
     }
 }
 
-// Test task 2 - demonstrates multitasking
-volatile uint32 task2_counter = 0;
-void test_task_2(void) {
-    print("[Task 2 started]\n");
+// Test process 2 - demonstrates process isolation
+volatile uint32 process2_counter = 0;
+void test_process_2(void) {
+    print("[Process 2 started]\n");
     while (1) {
-        task2_counter++;
-        // Let other tasks run
+        process2_counter++;
+        // Let other processes run
         for (volatile int i = 0; i < TASK_YIELD_DELAY; i++);
     }
 }
 
-// Main kernel task - handles keyboard input and status display
-void kernel_main_task(void) {
-    print("Multitasking initialized. Tasks are running.\n");
-    print("Task counters will increment in background.\n");
-    print("Monitoring task execution...\n\n");
+// Main kernel process - handles monitoring
+void kernel_main_process(void) {
+    print("Process isolation initialized. Processes are running.\n");
+    print("Process counters will increment in background.\n");
+    print("Monitoring process execution...\n\n");
     
     uint32 last_print_tick = 0;
     while (1) {
-        // Print task status every PRINT_INTERVAL_TICKS
+        // Print process status every PRINT_INTERVAL_TICKS
         if (g_timer_ticks - last_print_tick > PRINT_INTERVAL_TICKS) {
-            print("T1:");
-            print_hex(task1_counter);
-            print(" T2:");
-            print_hex(task2_counter);
+            print("P1:");
+            print_hex(process1_counter);
+            print(" P2:");
+            print_hex(process2_counter);
             print(" Ticks:");
             print_hex((uint32)g_timer_ticks);
             print("\n");
@@ -154,45 +155,40 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     tss_init(0x10, kernel_stack);
     print("TSS initialized\n");
     
-    print("\n=== Step 3: User Mode & System Calls ===\n");
-    print("Testing privilege separation (Ring 0 -> Ring 3)\n\n");
+    print("\n=== Step 4: Processes & Address Spaces ===\n");
+    print("Testing process isolation with separate address spaces\n\n");
     
-    // Allocate user space for the program
-    uint32 prog_size = user_program_size;
-    if (prog_size == 0) {
-        kernel_panic("User program size is 0");
-    }
-    if (prog_size > 4096) {
-        kernel_panic("User program too large");
-    }
-    void* user_code = allocate_user_memory(prog_size);
-    print("Allocated user code at: 0x");
-    print_hex((uint32)user_code);
+    // Initialize task subsystem first
+    task_init();
+    
+    // Create test tasks (not processes yet - just tasks for now)
+    print("Creating kernel tasks...\n");
+    task_t* task1 = task_create(test_process_1);
+    print("Created task 1: ID=");
+    print_hex(task1->id);
     print("\n");
     
-    // Copy user program to user space
-    memcpy(user_code, user_program_code, prog_size);
-    print("User program copied to user space (");
-    print_hex(prog_size);
-    print(" bytes)\n");
+    task_t* task2 = task_create(test_process_2);
+    print("Created task 2: ID=");
+    print_hex(task2->id);
+    print("\n");
     
-    // Allocate user stack
-    void* user_stack_bottom = allocate_user_memory(4096);  // 4KB stack
-    uint32 user_stack_top = (uint32)user_stack_bottom + 4096;
-    print("User stack allocated: 0x");
-    print_hex((uint32)user_stack_bottom);
-    print(" - 0x");
-    print_hex(user_stack_top);
+    task_t* main_task = task_create(kernel_main_process);
+    print("Created main task: ID=");
+    print_hex(main_task->id);
     print("\n\n");
     
-    // Enable interrupts before switching to user mode
+    // Initialize process subsystem
+    process_init();
+    print("Process subsystem initialized (processes will be added in future)\n\n");
+    
+    // Enable interrupts to start scheduling
+    print("Enabling interrupts and starting task scheduling...\n\n");
     asm volatile("sti");
     
-    // Switch to user mode and execute user program
-    // This should never return
-    switch_to_user_mode((uint32)user_code, user_stack_top);
-    
-    // Should never reach here
-    kernel_panic("Returned from user mode");
+    // Infinite loop - should never reach here as scheduler takes over
+    while (1) {
+        halt_cpu();
+    }
 }
 
