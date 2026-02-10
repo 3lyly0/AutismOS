@@ -54,6 +54,15 @@ uint32 shm_create(uint32 size) {
     uint32 page_size = 4096;
     uint32 aligned_size = (size + page_size - 1) & ~(page_size - 1);
     
+    // For simplicity, we allocate just one page for small regions
+    // In a full implementation, we would allocate multiple pages for larger regions
+    // For now, clamp to single page
+    if (aligned_size > page_size) {
+        // Would need to allocate multiple contiguous pages
+        // For this minimal implementation, just allocate one page
+        aligned_size = page_size;
+    }
+    
     // Allocate physical pages for the region
     void* phys_addr = allocate_page();
     if (!phys_addr) {
