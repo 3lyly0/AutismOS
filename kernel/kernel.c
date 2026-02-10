@@ -156,37 +156,47 @@ void kmain(uint32 magic, multiboot_info_t *mbi) {
     print("TSS initialized\n");
     
     print("\n=== Step 4: Processes & Address Spaces ===\n");
-    print("Testing process isolation with separate address spaces\n\n");
+    print("Demonstrating process abstraction with separate page directories\n\n");
     
     // Initialize task subsystem first
     task_init();
     
-    // Create test tasks (not processes yet - just tasks for now)
-    print("Creating kernel tasks...\n");
-    task_t* task1 = task_create(test_process_1);
-    print("Created task 1: ID=");
-    print_hex(task1->id);
-    print("\n");
-    
-    task_t* task2 = task_create(test_process_2);
-    print("Created task 2: ID=");
-    print_hex(task2->id);
-    print("\n");
-    
-    task_t* main_task = task_create(kernel_main_process);
-    print("Created main task: ID=");
-    print_hex(main_task->id);
-    print("\n\n");
-    
     // Initialize process subsystem
     process_init();
-    print("Process subsystem initialized (processes will be added in future)\n\n");
+    
+    // Create processes with their own page directories
+    print("Creating processes (each with own page directory)...\n");
+    process_t* proc1 = process_create(test_process_1, 0);
+    print("  -> Process 1: PID=");
+    print_hex(proc1->pid);
+    print(" PageDir=0x");
+    print_hex((uint32)proc1->page_dir);
+    print("\n");
+    
+    process_t* proc2 = process_create(test_process_2, 0);
+    print("  -> Process 2: PID=");
+    print_hex(proc2->pid);
+    print(" PageDir=0x");
+    print_hex((uint32)proc2->page_dir);
+    print("\n");
+    
+    process_t* main_proc = process_create(kernel_main_process, 0);
+    print("  -> Main process: PID=");
+    print_hex(main_proc->pid);
+    print(" PageDir=0x");
+    print_hex((uint32)main_proc->page_dir);
+    print("\n");
+    
+    print("\nNote: All processes have separate page directories.\n");
+    print("Kernel space is mapped identically in all directories.\n");
+    print("Process switching will change CR3 (page directory register).\n\n");
     
     // Enable interrupts to start scheduling
-    print("Enabling interrupts and starting task scheduling...\n\n");
+    print("Enabling interrupts and starting process scheduling...\n\n");
     asm volatile("sti");
     
-    // Infinite loop - should never reach here as scheduler takes over
+    // Main kernel loop - the scheduler will interrupt and switch to tasks
+    // This acts as an idle loop
     while (1) {
         halt_cpu();
     }
