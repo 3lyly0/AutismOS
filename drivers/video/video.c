@@ -100,3 +100,25 @@ void print_hex(uint32_t num) {
     print("0x");
     print(buffer);
 }
+
+// Debug print - only to serial port (not screen)
+void debug_print(const char *str) {
+    while (*str) {
+        outportb(0x3F8, (unsigned char)*str);
+        str++;
+    }
+}
+
+void debug_print_hex(uint32_t num) {
+    char hex_chars[] = "0123456789ABCDEF";
+    char buffer[9];
+    buffer[8] = '\0';
+
+    for (int i = 7; i >= 0; i--) {
+        buffer[i] = hex_chars[num & 0xF];
+        num >>= 4;
+    }
+
+    debug_print("0x");
+    debug_print(buffer);
+}
