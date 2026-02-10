@@ -178,7 +178,8 @@ void browser_process(void) {
             // Check if IP changed (user pressed Enter)
             if (strcmp(last_submitted_ip, current_ip) != 0) {
                 // New IP submitted!
-                strcpy(last_submitted_ip, current_ip);
+                strncpy(last_submitted_ip, current_ip, sizeof(last_submitted_ip) - 1);
+                last_submitted_ip[sizeof(last_submitted_ip) - 1] = '\0';
                 browser_url_submitted = 1;
                 browser_page_loaded = 0;
                 
