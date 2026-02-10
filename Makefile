@@ -30,9 +30,10 @@ ISO_DIR=isodir
 
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o $(BUILD)/syscall.o $(BUILD)/user_program_asm.o\
-		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o\
+		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o $(BUILD)/pci.o\
 		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
 		$(BUILD)/input.o $(BUILD)/network.o $(BUILD)/html.o $(BUILD)/layout.o\
+		$(BUILD)/rtl8139.o $(BUILD)/ethernet.o $(BUILD)/arp.o $(BUILD)/ip.o $(BUILD)/icmp.o\
 		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/kernel.o\
 		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/disk.o $(BUILD)/sound.o
 
@@ -108,6 +109,9 @@ $(BUILD)/isr.o : $(KERNEL)/arch/isr.c
 $(BUILD)/8259_pic.o : $(KERNEL)/arch/8259_pic.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/8259_pic.c -o $(BUILD)/8259_pic.o
 
+$(BUILD)/pci.o : $(KERNEL)/arch/pci.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/arch/pci.c -o $(BUILD)/pci.o
+
 # Kernel IPC files
 $(BUILD)/ipc.o : $(KERNEL)/ipc/ipc.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/ipc/ipc.c -o $(BUILD)/ipc.o
@@ -165,6 +169,22 @@ $(BUILD)/disk.o : $(DRIVERS)/storage/disk.c
 # Audio drivers
 $(BUILD)/sound.o : $(DRIVERS)/audio/sound.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/audio/sound.c -o $(BUILD)/sound.o
+
+# Network drivers
+$(BUILD)/rtl8139.o : $(DRIVERS)/network/rtl8139.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/rtl8139.c -o $(BUILD)/rtl8139.o
+
+$(BUILD)/ethernet.o : $(DRIVERS)/network/ethernet.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/ethernet.c -o $(BUILD)/ethernet.o
+
+$(BUILD)/arp.o : $(DRIVERS)/network/arp.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/arp.c -o $(BUILD)/arp.o
+
+$(BUILD)/ip.o : $(DRIVERS)/network/ip.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/ip.c -o $(BUILD)/ip.o
+
+$(BUILD)/icmp.o : $(DRIVERS)/network/icmp.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/network/icmp.c -o $(BUILD)/icmp.o
 
 
 
