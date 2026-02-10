@@ -8,6 +8,7 @@
 #include "multiboot.h"
 #include "mouse.h"
 #include "video.h"
+#include "graphics.h"
 #include "keyboard.h"
 #include "io_ports.h"
 #include "disk.h"
@@ -34,6 +35,9 @@ void timer_interrupt_handler(REGISTERS *regs) {
     (void)regs; // Suppress unused parameter warning
     // Timer tick and task switching handled by task_scheduler_tick
     // which is called directly from irq_0_with_task_switch
+    
+    // Step 9: Update caret blink for UI
+    ux_update_caret();
 }
 
 // Halt the CPU forever
@@ -129,12 +133,14 @@ static inline int sys_shm_map(uint32 shm_id, void** vaddr_out) {
     return result;
 }
 
-// Browser process - Full browser with networking and rendering (Step 7)
+// Browser process - Full browser with networking and rendering (Step 7 & 9)
 volatile uint32 browser_counter = 0;
 volatile uint32 browser_page_loaded = 0;
+volatile uint32 browser_url_submitted = 0;
+
 void browser_process(void) {
     if (!ux_is_silent()) {
-        print("[Browser/UI Process] Started - Step 7 Full Browser\n");
+        print("[Browser/UI Process] Started - Step 9 Interactive UI\n");
     }
     
     uint32 renderer_pid = 0;  // Renderer was created first (PID 0)
@@ -159,42 +165,54 @@ void browser_process(void) {
         }
     }
     
-    // Simulate user typing a URL
-    uint32 url_requested = 0;
+    // Track last URL to detect changes
+    char last_submitted_url[256] = {0};
     
-    // Browser main event loop (Step 7)
+    // Browser main event loop (Step 9)
     while (1) {
         browser_counter++;
         
-        // Simulate user input after a delay
-        if (!url_requested && browser_counter > 10) {
-            if (!ux_is_silent()) {
-                print("[Browser] User entered URL: ");
-                print(ux_get_last_url());
-                print("\n");
+        // Check if user submitted a new URL (Step 9)
+        const char* current_url = ux_get_last_url();
+        if (current_url && current_url[0]) {
+            // Check if URL changed (user pressed Enter)
+            if (strcmp(last_submitted_url, current_url) != 0) {
+                // New URL submitted!
+                strcpy(last_submitted_url, current_url);
+                browser_url_submitted = 1;
+                browser_page_loaded = 0;
+                
+                if (!ux_is_silent()) {
+                    print("[Browser] User submitted URL: ");
+                    print(current_url);
+                    print("\n");
+                }
+                
+                // Send URL request to renderer
+                sys_send_msg(renderer_pid, MSG_TYPE_URL_REQUEST, 0, 0);
             }
-            
-            // Save URL for persistence
-            ux_save_url(ux_get_last_url());
-            
-            // Send URL request to renderer (which will fetch and parse)
-            sys_send_msg(renderer_pid, MSG_TYPE_URL_REQUEST, 0, 0);
-            url_requested = 1;
         }
         
         // Poll for events
         message_t msg;
         if (sys_poll_msg(&msg) == 0) {
             if (msg.type == MSG_TYPE_FRAME_READY) {
-                // Frame is ready - display it
-                // In a real browser, this would composite to screen
-                if (!browser_page_loaded && !ux_is_silent()) {
-                    print("  [Browser] Page loaded successfully\n");
+                // Frame is ready - display it in content area (Step 9)
+                if (!browser_page_loaded && browser_url_submitted) {
+                    // Show page loaded in content area
+                    graphics_clear_region(2, 14, 76, 9, COLOR_BLACK);
+                    draw_text(3, 15, "Page loaded successfully!", COLOR_LIGHT_GREEN);
+                    draw_text(3, 17, "URL: ", COLOR_WHITE);
+                    draw_text(8, 17, last_submitted_url, COLOR_YELLOW);
+                    
                     browser_page_loaded = 1;
+                    
+                    if (!ux_is_silent()) {
+                        print("  [Browser] Page rendered in content area\n");
+                    }
                 }
             } else if (msg.type == INPUT_EVENT_KEY_DOWN) {
-                // Handle keyboard input
-                // For now, just acknowledge
+                // Handle keyboard input (already handled by keyboard driver)
             }
         }
         
