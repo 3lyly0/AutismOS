@@ -16,6 +16,6 @@ typedef struct __attribute__((packed)) {
 void ethernet_init(void);
 void ethernet_send(const uint8* dst_mac, uint16 type, const uint8* payload, uint16 length);
 void ethernet_receive(uint8* packet, uint16 length);
-uint8* ethernet_get_mac(void);
+const uint8* ethernet_get_mac(void);
 
 #endif
