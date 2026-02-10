@@ -1,7 +1,6 @@
 #include "ui.h"
 #include "graphics.h"
 #include "string.h"
-#include <stddef.h>
 
 // Global focus state
 static focus_state_t g_focus_state = {FOCUS_NONE, NULL, 0};
