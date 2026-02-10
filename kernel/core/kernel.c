@@ -289,7 +289,9 @@ void renderer_process(void) {
                 url_t parsed_url;
                 if (parse_url(url_str, &parsed_url) != 0) {
                     if (!ux_is_silent()) {
-                        print("  [Renderer] Failed to parse URL\n");
+                        print("  [Renderer] Failed to parse URL: ");
+                        print(url_str);
+                        print("\n");
                     }
                     // Send frame ready anyway to avoid hanging
                     sys_send_msg(msg.sender_pid, MSG_TYPE_FRAME_READY, 0, shm_id);
