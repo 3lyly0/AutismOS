@@ -1,7 +1,9 @@
 #include "gdt.h"
+#include "string.h"
 
 GDT g_gdt[NO_GDT_DESCRIPTORS];
 GDT_PTR g_gdt_ptr;
+TSS g_tss;
 
 void gdt_set_entry(int index, uint32 base, uint32 limit, uint8 access, uint8 gran) {
     GDT *this = &g_gdt[index];
@@ -22,11 +24,36 @@ void gdt_init() {
     g_gdt_ptr.limit = sizeof(g_gdt) - 1;
     g_gdt_ptr.base_address = (uint32)g_gdt;
 
-    gdt_set_entry(0, 0, 0, 0, 0);
-    gdt_set_entry(1, 0, 0xFFFFFFFF, 0x9A, 0xCF);
-    gdt_set_entry(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
-    gdt_set_entry(3, 0, 0xFFFFFFFF, 0xFA, 0xCF);
-    gdt_set_entry(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);
+    gdt_set_entry(0, 0, 0, 0, 0);               // Null descriptor
+    gdt_set_entry(1, 0, 0xFFFFFFFF, 0x9A, 0xCF);  // Kernel code
+    gdt_set_entry(2, 0, 0xFFFFFFFF, 0x92, 0xCF);  // Kernel data
+    gdt_set_entry(3, 0, 0xFFFFFFFF, 0xFA, 0xCF);  // User code
+    gdt_set_entry(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);  // User data
+    // Entry 5 will be TSS
 
     load_gdt((uint32)&g_gdt_ptr);
+}
+
+void tss_init(uint32 kernel_ss, uint32 kernel_esp) {
+    // Clear TSS
+    memset(&g_tss, 0, sizeof(TSS));
+    
+    // Set up TSS
+    g_tss.ss0 = kernel_ss;   // Kernel data segment
+    g_tss.esp0 = kernel_esp; // Kernel stack pointer
+    g_tss.cs = 0x0B;         // Kernel code segment (with RPL=3 mask)
+    g_tss.ss = 0x13;         // Kernel data segment (with RPL=3 mask)
+    g_tss.ds = 0x13;
+    g_tss.es = 0x13;
+    g_tss.fs = 0x13;
+    g_tss.gs = 0x13;
+    
+    // Add TSS descriptor to GDT
+    // Access: 0xE9 = Present, Executable, Accessed, 32-bit TSS
+    uint32 base = (uint32)&g_tss;
+    uint32 limit = sizeof(TSS);
+    gdt_set_entry(5, base, limit, 0x89, 0x00);
+    
+    // Load TSS
+    tss_flush();
 }
