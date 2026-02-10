@@ -150,9 +150,20 @@ Browser process: PID=0x00000001 (UI/Input/Compositor)
 ---
 
 ### **File Structure**
-- **`boot/`**: Contains bootloader code.
-- **`kernel/`**: Contains the kernel source code.
-- **`drivers/`**: Contains drivers for hardware interaction (e.g., keyboard, disk).
+- **`boot/`**: Contains bootloader code and linker scripts.
+- **`asm/`**: Assembly language source files (GDT, IDT, IRQ, syscalls, exceptions).
+- **`kernel/`**: Contains the kernel source code, organized into subdirectories:
+  - **`kernel/core/`**: Core kernel functions (kernel.c, memory.c, process.c, task.c)
+  - **`kernel/arch/`**: Architecture-specific code (gdt.c, idt.c, isr.c, io_ports.c, 8259_pic.c)
+  - **`kernel/ipc/`**: Inter-process communication (ipc.c, shm.c)
+  - **`kernel/syscall/`**: System call implementation (syscall.c, usermode.c)
+  - **`kernel/browser/`**: Browser-specific functionality (html.c, layout.c, network.c)
+- **`drivers/`**: Hardware drivers, organized by device type:
+  - **`drivers/input/`**: Input devices (keyboard.c, mouse.c, input.c)
+  - **`drivers/video/`**: Video driver (video.c)
+  - **`drivers/storage/`**: Storage devices (disk.c)
+  - **`drivers/audio/`**: Audio devices (sound.c)
+- **`lib/`**: Utility libraries (string.c)
 - **`include/`**: Header files for shared definitions and declarations.
 - **`Makefile`**: Build script for compiling the OS.
 - **`autismos.iso`**: The generated ISO file for the OS.
