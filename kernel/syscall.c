@@ -3,9 +3,13 @@
 #include "idt.h"
 #include "isr.h"
 #include "usermode.h"
+#include "process.h"
 
 // Syscall handler - called when user mode executes int 0x80
 void syscall_handler(REGISTERS *regs) {
+    // Get current process for context
+    process_t* current = process_get_current();
+    
     // Get syscall number from EAX
     uint32 syscall_num = regs->eax;
     
@@ -17,7 +21,13 @@ void syscall_handler(REGISTERS *regs) {
             
             // Validate pointer is in user space
             if ((uint32)str < USER_SPACE_START || (uint32)str >= USER_SPACE_END) {
-                print("Syscall error: Invalid pointer\n");
+                print("Syscall error: Invalid pointer (PID=");
+                if (current) {
+                    print_hex(current->pid);
+                } else {
+                    print("?");
+                }
+                print(")\n");
                 regs->eax = -1;
                 return;
             }
