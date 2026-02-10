@@ -43,6 +43,9 @@ void print(const char *str) {
     static unsigned int row = 0, col = 0;
 
     while (*str) {
+        // Also send to serial port for debugging
+        outportb(0x3F8, (unsigned char)*str);
+        
         if (*str == '\n') {
             row++;
             col = 0;

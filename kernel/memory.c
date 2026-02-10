@@ -127,15 +127,26 @@ void free_page(void *ptr) {
 void paging_init() {
     print("Initializing paging...\n");
     
+    print("Page directory at: 0x");
+    print_hex((uint32_t)page_directory);
+    print("\n");
+    print("Page table at: 0x");
+    print_hex((uint32_t)first_page_table);
+    print("\n");
+    
     memset(page_directory, 0, sizeof(page_directory));
     memset(first_page_table, 0, sizeof(first_page_table));
     
     uint32_t kernel_end_addr = (uint32_t)&__kernel_section_end;
-    uint32_t pages_to_map = (kernel_end_addr + PAGE_SIZE - 1) / PAGE_SIZE + 16;
+    uint32_t pages_to_map = (kernel_end_addr + PAGE_SIZE - 1) / PAGE_SIZE + 64;
     
     if (pages_to_map > PAGE_TABLE_SIZE) {
         pages_to_map = PAGE_TABLE_SIZE;
     }
+    
+    print("Mapping ");
+    print_hex(pages_to_map);
+    print(" pages\n");
     
     for (uint32_t i = 0; i < pages_to_map; i++) {
         uint32_t phys_addr = i * PAGE_SIZE;
