@@ -13,7 +13,8 @@ void ux_init(void) {
     memset(&g_ux_state, 0, sizeof(ux_state_t));
     
     // Set defaults
-    strcpy(g_ux_state.last_url, "http://example.com/");
+    strncpy(g_ux_state.last_ip, "192.168.1.1", sizeof(g_ux_state.last_ip) - 1);
+    g_ux_state.last_ip[sizeof(g_ux_state.last_ip) - 1] = '\0';
     g_ux_state.active_process = 1; // Browser process by default
     g_ux_state.boot_complete = 0;
     g_ux_state.silent_mode = 0;
@@ -33,7 +34,7 @@ void ux_show_boot_screen(void) {
     draw_text(2, 5, " ██╔══██║██║   ██║   ██║   ██║╚════██║██║╚██╔╝██║██║   ██║╚════██║", COLOR_LIGHT_CYAN);
     draw_text(2, 6, " ██║  ██║╚██████╔╝   ██║   ██║███████║██║ ╚═╝ ██║╚██████╔╝███████║", COLOR_LIGHT_CYAN);
     draw_text(2, 7, " ╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚══════╝", COLOR_LIGHT_CYAN);
-    draw_text(20, 9, "Browser-First Operating System", COLOR_WHITE);
+    draw_text(20, 9, "Network Ping Utility", COLOR_WHITE);
     draw_text(2, 11, "  Booting...", COLOR_YELLOW);
 }
 
@@ -43,12 +44,12 @@ void ux_init_ui(void) {
         return;
     }
     
-    // Initialize URL textbox
-    textbox_init(&g_ux_state.url_textbox, 10, 5, 60, 3);
+    // Initialize IP textbox (adjusted position for "IP Address:" label)
+    textbox_init(&g_ux_state.url_textbox, 14, 5, 56, 3);
     
-    // Pre-fill with last URL
-    if (g_ux_state.last_url[0]) {
-        strncpy(g_ux_state.url_textbox.buffer, g_ux_state.last_url, TEXTBOX_MAX_LEN - 1);
+    // Pre-fill with last IP
+    if (g_ux_state.last_ip[0]) {
+        strncpy(g_ux_state.url_textbox.buffer, g_ux_state.last_ip, TEXTBOX_MAX_LEN - 1);
         g_ux_state.url_textbox.cursor_pos = strlen(g_ux_state.url_textbox.buffer);
     }
     
@@ -63,22 +64,22 @@ void ux_show_ready_screen(void) {
     graphics_clear_screen(COLOR_BLACK);
     
     // Title
-    draw_text(2, 1, "AutismOS - Browser", COLOR_LIGHT_CYAN);
+    draw_text(2, 1, "AutismOS - Network Ping", COLOR_LIGHT_CYAN);
     draw_rect(1, 0, 78, 3, COLOR_LIGHT_GRAY);
     
-    // URL input label
-    draw_text(2, 4, "URL:", COLOR_WHITE);
+    // IP address input label
+    draw_text(2, 4, "IP Address:", COLOR_WHITE);
     
     // Render URL textbox
     textbox_render(&g_ux_state.url_textbox);
     
     // Instructions
-    draw_text(2, 10, "Press ENTER to navigate", COLOR_YELLOW);
-    draw_text(2, 11, "Type to edit URL", COLOR_LIGHT_GRAY);
+    draw_text(2, 10, "Press ENTER to ping", COLOR_YELLOW);
+    draw_text(2, 11, "Type to edit IP address", COLOR_LIGHT_GRAY);
     
     // Content area separator
     draw_rect(1, 13, 78, 11, COLOR_DARK_GRAY);
-    draw_text(3, 14, "Content will appear here...", COLOR_LIGHT_GRAY);
+    draw_text(3, 14, "Ping results will appear here...", COLOR_LIGHT_GRAY);
 }
 
 // Finish boot sequence and transition to main UI
@@ -111,21 +112,21 @@ void ux_handle_key_input(char ch) {
     }
 }
 
-// Handle Enter key - submit URL (Step 9)
+// Handle Enter key - submit IP for ping (Step 9)
 void ux_handle_enter_key(void) {
     if (!g_ux_state.ui_initialized) {
         return;
     }
     
-    const char* url = textbox_get_text(&g_ux_state.url_textbox);
-    if (url && url[0]) {
-        // Save the URL
-        ux_save_url(url);
+    const char* ip = textbox_get_text(&g_ux_state.url_textbox);
+    if (ip && ip[0]) {
+        // Save the IP
+        ux_save_ip(ip);
         
         // Show loading message in content area
         graphics_clear_region(2, 14, 76, 9, COLOR_BLACK);
-        draw_text(3, 15, "Loading: ", COLOR_WHITE);
-        draw_text(13, 15, url, COLOR_YELLOW);
+        draw_text(3, 15, "Pinging: ", COLOR_WHITE);
+        draw_text(13, 15, ip, COLOR_YELLOW);
         draw_text(3, 17, "Please wait...", COLOR_LIGHT_GRAY);
     }
 }
@@ -152,16 +153,16 @@ uint8 ux_is_silent(void) {
     return g_ux_state.silent_mode;
 }
 
-// Persistence - URL
-void ux_save_url(const char* url) {
-    if (url) {
-        strncpy(g_ux_state.last_url, url, sizeof(g_ux_state.last_url) - 1);
-        g_ux_state.last_url[sizeof(g_ux_state.last_url) - 1] = '\0';
+// Persistence - IP address
+void ux_save_ip(const char* ip) {
+    if (ip) {
+        strncpy(g_ux_state.last_ip, ip, sizeof(g_ux_state.last_ip) - 1);
+        g_ux_state.last_ip[sizeof(g_ux_state.last_ip) - 1] = '\0';
     }
 }
 
-const char* ux_get_last_url(void) {
-    return g_ux_state.last_url;
+const char* ux_get_last_ip(void) {
+    return g_ux_state.last_ip;
 }
 
 // Persistence - Active process
