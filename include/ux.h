@@ -17,11 +17,11 @@
 
 // System state persistence (survives across process restarts)
 typedef struct {
-    char last_url[256];       // Last URL visited
+    char last_ip[256];        // Last IP address visited
     uint32 active_process;    // Currently focused process PID
     uint8 boot_complete;      // Boot sequence finished flag
     uint8 silent_mode;        // Hide debug logs
-    textbox_t url_textbox;    // Step 9: URL input textbox
+    textbox_t url_textbox;    // Step 9: IP input textbox (kept as url_textbox for compatibility)
     uint8 ui_initialized;     // Step 9: UI is ready
 } ux_state_t;
 
@@ -37,8 +37,8 @@ void ux_set_silent_mode(uint8 enabled);
 uint8 ux_is_silent(void);
 
 // Persistence
-void ux_save_url(const char* url);
-const char* ux_get_last_url(void);
+void ux_save_ip(const char* ip);
+const char* ux_get_last_ip(void);
 void ux_set_active_process(uint32 pid);
 uint32 ux_get_active_process(void);
 
