@@ -34,7 +34,7 @@ OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
 		$(BUILD)/input.o $(BUILD)/network.o $(BUILD)/html.o $(BUILD)/layout.o\
 		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/kernel.o\
-		$(BUILD)/video.o $(BUILD)/disk.o $(BUILD)/sound.o
+		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/disk.o $(BUILD)/sound.o
 
 
 all: $(BUILD) $(OBJECTS)
@@ -151,6 +151,12 @@ $(BUILD)/input.o : $(DRIVERS)/input/input.c
 # Video drivers
 $(BUILD)/video.o : $(DRIVERS)/video/video.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/video.c -o $(BUILD)/video.o
+
+$(BUILD)/graphics.o : $(DRIVERS)/video/graphics.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/graphics.c -o $(BUILD)/graphics.o
+
+$(BUILD)/ui.o : $(DRIVERS)/video/ui.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/ui.c -o $(BUILD)/ui.o
 
 # Storage drivers
 $(BUILD)/disk.o : $(DRIVERS)/storage/disk.c

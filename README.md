@@ -2,11 +2,41 @@
 
 AutismOS is a minimalistic educational operating system designed for learning low-level system programming, with a focus on bootloading, interrupts, hardware interaction, and **browser-oriented architecture**.
 
-**Latest Achievement: Step 8 - User Experience Kernel ✅**
+**Latest Achievement: Step 9 - Interactive Graphics UI ✅**
 
 ---
 
 ## **Current Features**
+
+### ✅ Step 9: Interactive Graphics UI & In-Page Interaction (COMPLETE)
+
+The transformation from text-based interface to true graphical interaction:
+
+#### Graphics Primitives
+- **Drawing operations** for rectangles, text, characters, and cursor
+- **VGA text mode graphics** with color support
+- **Partial redraw model** - only update changed regions
+- **No full screen clears** - maintains visual stability
+
+#### UI Components
+- **Textbox widget** with visual borders and focus indication
+- **Focus management** - only one element receives input at a time
+- **Caret blinking** using timer interrupts (~500ms)
+- **Visual feedback** - focused elements highlighted
+
+#### Interactive Flow
+- **URL input field** - users can type directly on screen
+- **Enter key submission** - press Enter to navigate
+- **In-page rendering** - content appears without mode switches
+- **Live updates** - typed characters appear immediately
+- **No debug logs** visible to user - clean experience
+
+#### User Experience
+- **Graphical boot screen** with ASCII art logo
+- **Ready screen** with URL input and instructions
+- **Content area** for page display
+- **Keyboard-driven** interaction
+- **Feels alive** - responsive and interactive
 
 ### ✅ Step 8: User Experience Kernel (COMPLETE)
 
@@ -138,9 +168,11 @@ If you make changes to the source code, follow these steps to rebuild and run th
 
 ### **What You'll See**
 
-When you run AutismOS, you'll experience a **clean, professional boot sequence**:
+When you run AutismOS, you'll experience a **clean, interactive graphical interface** (Step 9):
 
 #### On Screen (VGA Display):
+
+**Boot Screen:**
 ```
   █████╗ ██╗   ██╗████████╗██╗███████╗███╗   ███╗ ██████╗ ███████╗
  ██╔══██╗██║   ██║╚══██╔══╝██║██╔════╝████╗ ████║██╔═══██╗██╔════╝
@@ -154,20 +186,34 @@ When you run AutismOS, you'll experience a **clean, professional boot sequence**
   Booting...
 ```
 
-Then transitions to:
+**Interactive Browser Screen (Step 9):**
 ```
-  AutismOS - Ready
-  ═══════════════════════════════════════════════════════════════════
++----------------------------------------------------------------------------+
+| AutismOS - Browser                                                         |
++----------------------------------------------------------------------------+
 
-  Active: Browser
-  URL: http://example.com/
+URL: +----------------------------------------------------------+
+     | http://example.com/                                   _  |
+     +----------------------------------------------------------+
 
-  Shortcuts:
-    Alt+B - Focus Browser
-    Alt+Q - Quit Application
 
-  ═══════════════════════════════════════════════════════════════════
+Press ENTER to navigate
+Type to edit URL
+
++----------------------------------------------------------------------------+
+| Content will appear here...                                                |
+|                                                                            |
++----------------------------------------------------------------------------+
 ```
+
+**Key Features:**
+- ✅ **Graphical interface** with borders and visual structure
+- ✅ **Interactive URL textbox** - type directly, see characters appear
+- ✅ **Blinking cursor** shows where you're typing
+- ✅ **Enter key** to submit and load pages
+- ✅ **In-page updates** - no screen clearing
+- ✅ **Visual feedback** - focused elements highlighted
+- ✅ **Clean separation** between UI and content areas
 
 #### Behind the Scenes:
 - Renderer process (PID=0) fetches and renders pages
@@ -248,3 +294,51 @@ Contributions are welcome! Feel free to open issues or submit pull requests to i
 
 ### **License**
 This project is licensed under the GNU General Public License (GPL) Version 3. See the `LICENSE` file for details.
+
+---
+
+## **Step 9: How to Experience the Interactive UI**
+
+The interactive UI is best experienced by running AutismOS in QEMU with a graphical display:
+
+### **Interactive Mode (Recommended)**
+```bash
+# Build the OS
+make
+
+# Run with graphical display
+qemu-system-x86_64 -cdrom autismos.iso
+```
+
+This opens a window showing:
+1. **Boot screen** with AutismOS ASCII art logo
+2. **Interactive browser** with URL textbox
+3. **Blinking cursor** in the input field
+4. **Live typing** - characters appear as you type
+5. **Content area** for page display
+
+### **Keyboard Interaction**
+When the QEMU window has focus:
+- **Type** - Characters appear in the URL textbox
+- **Backspace** - Delete characters
+- **Enter** - Submit URL and load page
+- **Alt+B** - Focus browser (already focused by default)
+- **Alt+Q** - Quit
+
+### **Headless Mode (Debug)**
+```bash
+# Run without display (serial output only)
+qemu-system-x86_64 -cdrom autismos.iso -serial stdio -nographic
+```
+
+Note: In headless mode, you'll only see kernel debug output. The interactive UI requires a graphical display to fully experience.
+
+### **What You'll Notice**
+- ✨ **Immediate feedback** - Type and see characters instantly
+- ✨ **Blinking cursor** - Shows system is alive and ready
+- ✨ **Visual structure** - Clear UI layout with borders
+- ✨ **No screen clears** - Updates happen in-place
+- ✨ **Professional feel** - System responds like a real OS
+
+This is the **emotional turning point** where AutismOS transforms from a technical demo into something that feels genuinely usable.
+
