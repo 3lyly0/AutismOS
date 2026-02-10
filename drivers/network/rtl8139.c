@@ -107,29 +107,42 @@ int rtl8139_send_packet(const uint8* data, uint16 length) {
 }
 
 int rtl8139_poll_receive(void) {
-    if (!io_base) return 0;
+    if (!io_base || !rx_buffer)
+        return 0;
 
-    /* Poll RX buffer directly (no ISR gating) */
-    while (!(r8(REG_CMD) & 0x01)) {
+    /* RX buffer empty? */
+    if (r8(REG_CMD) & 0x01)
+        return 0;
 
-        uint16 rx_status = *(uint16*)(rx_buffer + rx_offset);
-        uint16 rx_len    = *(uint16*)(rx_buffer + rx_offset + 2);
+    /* Read header safely */
+    uint16 rx_status = *(uint16*)(rx_buffer + rx_offset);
+    uint16 rx_len    = *(uint16*)(rx_buffer + rx_offset + 2);
 
-        if (rx_status & 0x01) {
-            uint8* pkt = rx_buffer + rx_offset + 4;
-            if (receive_callback && rx_len > 4) {
-                receive_callback(pkt, rx_len - 4);
-            }
-        }
-
-        rx_offset = (rx_offset + rx_len + 4 + 3) & ~3;
-        rx_offset %= RTL8139_RX_BUF_SIZE;
-
+    /* Sanity checks */
+    if (rx_len < 4 || rx_len > RTL8139_RX_BUF_SIZE) {
+        /* Reset ring on corruption */
+        rx_offset = 0;
         w16(REG_CAPR, rx_offset - 16);
+        return 0;
     }
+
+    if (rx_status & 0x01) {
+        uint8* pkt = rx_buffer + rx_offset + 4;
+
+        if (receive_callback && rx_len > 4) {
+            receive_callback(pkt, rx_len - 4);
+        }
+    }
+
+    /* Advance ring */
+    rx_offset = (rx_offset + rx_len + 4 + 3) & ~3;
+    rx_offset %= RTL8139_RX_BUF_SIZE;
+
+    w16(REG_CAPR, rx_offset - 16);
 
     return 1;
 }
+
 
 uint8* rtl8139_get_mac_address(void) {
     return mac_address;
