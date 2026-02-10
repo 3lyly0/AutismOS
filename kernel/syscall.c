@@ -4,6 +4,23 @@
 #include "isr.h"
 #include "usermode.h"
 #include "process.h"
+#include "ipc.h"
+#include "task.h"
+
+// Helper function to validate pointer is accessible
+// For now, we just check it's not NULL and is aligned
+// In a full implementation, this would check page tables
+static inline int is_valid_pointer(void* ptr, uint32 size) {
+    if (!ptr) return 0;  // NULL pointer
+    uint32 addr = (uint32)ptr;
+    // Check alignment for message_t (should be 4-byte aligned)
+    if (addr % 4 != 0) return 0;
+    // Basic sanity check - not in first page (NULL dereference protection)
+    if (addr < 0x1000) return 0;
+    // Check it doesn't overflow
+    if (addr + size < addr) return 0;  // Overflow
+    return 1;  // Appears valid
+}
 
 // Syscall handler - called when user mode executes int 0x80
 void syscall_handler(REGISTERS *regs) {
@@ -45,6 +62,97 @@ void syscall_handler(REGISTERS *regs) {
             regs->eax = 0; // Return success
             break;
         }
+        
+        case SYS_SEND: {
+            // SYS_SEND: Send IPC message to another process
+            // EBX = target PID
+            // ECX = pointer to message_t structure
+            uint32 target_pid = regs->ebx;
+            message_t* msg = (message_t*)regs->ecx;
+            
+            // Validate pointer before dereferencing
+            if (!is_valid_pointer(msg, sizeof(message_t))) {
+                regs->eax = -1;  // Invalid pointer
+                break;
+            }
+            
+            // Find target process
+            process_t* target = process_find_by_pid(target_pid);
+            if (!target) {
+                regs->eax = -1;  // Process not found
+                break;
+            }
+            
+            // Set sender PID
+            msg->sender_pid = current ? current->pid : 0;
+            
+            // Enqueue message to target's inbox
+            int result = message_queue_enqueue(&target->inbox, msg);
+            
+            // Wake up target if it's waiting for messages
+            if (result == 0 && target->main_thread && 
+                target->main_thread->state == TASK_WAITING) {
+                target->main_thread->state = TASK_READY;
+            }
+            
+            regs->eax = result;  // 0 on success, -1 if queue full
+            break;
+        }
+        
+        case SYS_RECV: {
+            // SYS_RECV: Receive IPC message (blocking)
+            // EBX = pointer to message_t structure to fill
+            message_t* msg = (message_t*)regs->ebx;
+            
+            // Validate pointer before writing to it
+            if (!is_valid_pointer(msg, sizeof(message_t))) {
+                regs->eax = -1;  // Invalid pointer
+                break;
+            }
+            
+            if (!current) {
+                regs->eax = -1;
+                break;
+            }
+            
+            // Try to dequeue a message
+            int result = message_queue_dequeue(&current->inbox, msg);
+            
+            if (result == 0) {
+                // Message received
+                regs->eax = 0;
+            } else {
+                // No message available - block the task
+                if (current->main_thread) {
+                    current->main_thread->state = TASK_WAITING;
+                }
+                regs->eax = -1;  // Will be retried when task wakes
+            }
+            break;
+        }
+        
+        case SYS_POLL: {
+            // SYS_POLL: Check for IPC message (non-blocking)
+            // EBX = pointer to message_t structure to fill
+            message_t* msg = (message_t*)regs->ebx;
+            
+            // Validate pointer before writing to it
+            if (!is_valid_pointer(msg, sizeof(message_t))) {
+                regs->eax = -1;  // Invalid pointer
+                break;
+            }
+            
+            if (!current) {
+                regs->eax = -1;
+                break;
+            }
+            
+            // Try to dequeue a message (non-blocking)
+            int result = message_queue_dequeue(&current->inbox, msg);
+            regs->eax = result;  // 0 if message received, -1 if no message
+            break;
+        }
+        
         default:
             // Unknown syscall
             print("Unknown syscall: ");
