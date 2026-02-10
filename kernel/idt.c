@@ -68,7 +68,7 @@ void idt_init() {
     idt_set_entry(45, (uint32)irq_13, 0x08, 0x8E);
     idt_set_entry(46, (uint32)irq_14, 0x08, 0x8E);
     idt_set_entry(47, (uint32)irq_15, 0x08, 0x8E);
-    idt_set_entry(128, (uint32)exception_128, 0x08, 0x8E);
+    idt_set_entry(128, (uint32)syscall_int_0x80, 0x08, 0xEE); // DPL=3 for user mode access
 
     load_idt((uint32)&g_idt_ptr);
     // Interrupts will be enabled explicitly after all handlers are registered
