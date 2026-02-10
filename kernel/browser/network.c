@@ -127,9 +127,13 @@ static int is_valid_ip(const char* ip) {
     for (const char* p = ip; *p; p++) {
         if (*p >= '0' && *p <= '9') {
             if (digits >= 3) return 0;  // Too many digits in octet
+            
+            // Check for overflow before accumulating
+            int new_value = value * 10 + (*p - '0');
+            if (new_value > 255) return 0;  // Octet would be too large
+            
             digits++;
-            value = value * 10 + (*p - '0');
-            if (value > 255) return 0;  // Octet too large
+            value = new_value;
         } else if (*p == '.') {
             if (digits == 0) return 0;  // Empty octet
             dots++;
