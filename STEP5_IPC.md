@@ -46,11 +46,12 @@ The implementation includes a demonstration of browser-like architecture:
 
 ### Browser Process (PID 1)
 - Simulates UI/control process
-- Sends RENDER requests to renderer
+- Sends RENDER requests to Renderer (PID 0)
 - Polls for FRAME_READY responses
 
 ### Renderer Process (PID 0)
 - Simulates HTML/layout engine
+- Created first, receives PID 0
 - Polls for RENDER requests
 - Sends FRAME_READY responses back
 
