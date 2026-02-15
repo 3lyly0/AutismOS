@@ -70,6 +70,9 @@ void desktop_draw_window(window_t* w);
 // Update mouse position
 void desktop_update_mouse(int dx, int dy, uint8 buttons);
 
+// Draw mouse cursor directly (used by mouse IRQ handlers)
+void desktop_draw_mouse_direct(void);
+
 // Get desktop state
 desktop_t* desktop_get_state(void);
 

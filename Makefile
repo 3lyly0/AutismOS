@@ -33,11 +33,11 @@ APPS = apps
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o $(BUILD)/syscall.o $(BUILD)/user_program_asm.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o $(BUILD)/pci.o\
-		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
+		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/mouse_smooth.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
 		$(BUILD)/input.o $(BUILD)/network.o $(BUILD)/html.o $(BUILD)/layout.o\
 		$(BUILD)/rtl8139.o $(BUILD)/ethernet.o $(BUILD)/arp.o $(BUILD)/ip.o $(BUILD)/icmp.o $(BUILD)/tcp.o\
 		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/desktop.o $(BUILD)/kernel.o\
-		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/disk.o $(BUILD)/sound.o\
+		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/boot_animation.o $(BUILD)/disk.o $(BUILD)/sound.o\
 		$(BUILD)/notepad.o $(BUILD)/calculator.o $(BUILD)/sysinfo.o
 
 
@@ -155,6 +155,9 @@ $(BUILD)/keyboard.o : $(DRIVERS)/input/keyboard.c
 $(BUILD)/mouse.o : $(DRIVERS)/input/mouse.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/mouse.c -o $(BUILD)/mouse.o
 
+$(BUILD)/mouse_smooth.o : $(DRIVERS)/input/mouse_smooth.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/mouse_smooth.c -o $(BUILD)/mouse_smooth.o
+
 $(BUILD)/input.o : $(DRIVERS)/input/input.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/input.c -o $(BUILD)/input.o
 
@@ -167,6 +170,9 @@ $(BUILD)/graphics.o : $(DRIVERS)/video/graphics.c
 
 $(BUILD)/ui.o : $(DRIVERS)/video/ui.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/ui.c -o $(BUILD)/ui.o
+
+$(BUILD)/boot_animation.o : $(DRIVERS)/video/boot_animation.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/boot_animation.c -o $(BUILD)/boot_animation.o
 
 # Storage drivers
 $(BUILD)/disk.o : $(DRIVERS)/storage/disk.c
