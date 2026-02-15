@@ -26,7 +26,7 @@
 #include "desktop.h"
 #include "notepad.h"
 #include "mouse.h"
-#include "mouse.h"
+#include "mouse_smooth.h"
 
 /* =========================
    Globals
@@ -285,7 +285,8 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
 
     shm_init();
     input_init();
-    mouse_init();  // Initialize PS/2 mouse
+    mouse_init();  // Initialize PS/2 mouse (original driver)
+    mouse_smooth_init();  // Initialize smooth mouse (new alternative driver)
     network_init();
     html_init();
     layout_init();
