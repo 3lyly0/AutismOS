@@ -32,16 +32,26 @@ void textbox_init(textbox_t* box, uint32 x, uint32 y, uint32 w, uint32 h) {
     memset(box->buffer, 0, TEXTBOX_MAX_LEN);
 }
 
-// Render a textbox
+// Render a textbox with enhanced visual feedback
 void textbox_render(textbox_t* box) {
     if (!box) return;
     
     // Clear the textbox area
     graphics_clear_region(box->x, box->y, box->w, box->h, COLOR_BLACK);
     
-    // Draw border (different color if focused)
+    // Draw border with enhanced visual feedback
     uint8 border_color = box->focused ? COLOR_LIGHT_CYAN : COLOR_LIGHT_GRAY;
     draw_rect(box->x, box->y, box->w, box->h, border_color);
+    
+    // Add subtle background highlight when focused
+    if (box->focused && box->h > 2) {
+        // Fill interior with very subtle background color
+        for (uint32 row = box->y + 1; row < box->y + box->h - 1 && row < 25; row++) {
+            for (uint32 col = box->x + 1; col < box->x + box->w - 1 && col < 80; col++) {
+                draw_char_with_bg(col, row, ' ', COLOR_WHITE, COLOR_BLACK);
+            }
+        }
+    }
     
     // Draw text content
     if (box->buffer[0]) {
@@ -60,14 +70,36 @@ void textbox_render(textbox_t* box) {
         for (uint32 pos = start_offset; pos < TEXTBOX_MAX_LEN && box->buffer[pos] && i < visible_chars; pos++, i++) {
             draw_char(text_x + i, text_y, box->buffer[pos], box->text_color);
         }
+        
+        // Draw scroll indicator if text is longer than visible area
+        uint32 text_len = 0;
+        while (box->buffer[text_len] != '\0' && text_len < TEXTBOX_MAX_LEN) {
+            text_len++;
+        }
+        
+        if (text_len > visible_chars && box->w > 4) {
+            // Show left arrow (CP437 0x11) if we're scrolled
+            if (start_offset > 0) {
+                draw_char(box->x + 1, text_y, 0x11, COLOR_YELLOW);  // CP437 left arrow
+            }
+            // Show right arrow (CP437 0x10) if there's more text
+            if (start_offset + visible_chars < text_len) {
+                draw_char(box->x + box->w - 2, text_y, 0x10, COLOR_YELLOW);  // CP437 right arrow
+            }
+        }
     }
 }
 
-// Handle character input
+// Handle character input with validation
 void textbox_handle_char(textbox_t* box, char ch) {
     if (!box || !box->focused) return;
     
-    // Check if we have space
+    // Validate input - only accept printable ASCII characters
+    if (ch < 32 || ch > 126) {
+        return;
+    }
+    
+    // Check if we have space (leave room for null terminator)
     if (box->cursor_pos >= TEXTBOX_MAX_LEN - 1) {
         return;
     }
@@ -81,7 +113,7 @@ void textbox_handle_char(textbox_t* box, char ch) {
     textbox_render(box);
 }
 
-// Handle backspace
+// Handle backspace with validation
 void textbox_handle_backspace(textbox_t* box) {
     if (!box || !box->focused) return;
     
@@ -107,6 +139,26 @@ void textbox_clear(textbox_t* box) {
 const char* textbox_get_text(textbox_t* box) {
     if (!box) return NULL;
     return box->buffer;
+}
+
+// Set textbox text programmatically
+void textbox_set_text(textbox_t* box, const char* text) {
+    if (!box || !text) return;
+    
+    // Clear existing text
+    memset(box->buffer, 0, TEXTBOX_MAX_LEN);
+    box->cursor_pos = 0;
+    
+    // Copy new text up to max length
+    while (*text && box->cursor_pos < TEXTBOX_MAX_LEN - 1) {
+        box->buffer[box->cursor_pos] = *text;
+        box->cursor_pos++;
+        text++;
+    }
+    box->buffer[box->cursor_pos] = '\0';
+    
+    // Redraw textbox
+    textbox_render(box);
 }
 
 // Set focus to an element
