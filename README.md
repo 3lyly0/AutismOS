@@ -2,13 +2,54 @@
 
 AutismOS is a minimalistic educational operating system designed for learning low-level system programming, with a focus on bootloading, interrupts, hardware interaction, and **browser-oriented architecture**.
 
-**Latest Achievement: Real Networking Stack ✅**
+**Latest Achievements:**
+- ✅ **Animated Boot Sequence** - Professional boot animation with progress indicators
+- ✅ **Smooth Mouse Control** - Alternative mouse driver with acceleration and velocity smoothing
+- ✅ **Real Networking Stack**
 
 ---
 
 ## **Current Features**
 
-### ✅ Real Networking Stack (NEW)
+### ✅ Boot Animation (NEW)
+
+Professional animated boot sequence that enhances the user experience:
+
+#### Animation Features
+- **5-frame progressive reveal** of the AutismOS logo
+- **Dynamic progress bars** showing boot stages (20%, 40%, 60%, 80%, 100%)
+- **Smooth color transitions** from dark gray to bright cyan
+- **Loading indicators** with animated dots
+- **Stage-by-stage messages**:
+  - Initializing...
+  - Loading drivers...
+  - Initializing memory...
+  - Starting desktop environment...
+  - Boot complete!
+
+### ✅ Smooth Mouse Control (NEW)
+
+Advanced alternative mouse driver that provides superior control compared to the original PS/2 mouse driver:
+
+#### Smooth Mouse Features
+- **Velocity-based smoothing** - Fluid, responsive cursor movement
+- **Acceleration support** - Faster movements get extra boost for quick navigation
+- **Momentum physics** - Smooth deceleration feels natural
+- **Configurable sensitivity** - Adjust from 1-10 (default: 5)
+- **Runtime switching** - Enable/disable smooth mode at any time
+- **Bounds checking** - Prevents cursor from leaving screen
+- **Works alongside original driver** - Both drivers coexist without modification to original
+
+#### API Functions
+```c
+void mouse_smooth_init(void);              // Initialize smooth mouse
+void mouse_smooth_enable(void);            // Enable smooth mode
+void mouse_smooth_disable(void);           // Disable smooth mode
+void mouse_smooth_set_sensitivity(uint8);  // Set sensitivity (1-10)
+uint8 mouse_smooth_is_enabled(void);       // Check if enabled
+```
+
+### ✅ Real Networking Stack
 
 Full implementation of a minimal TCP/IP networking stack from hardware to ICMP:
 
@@ -337,12 +378,14 @@ The graphics system has been significantly enhanced with professional visual ele
   - **`kernel/ipc/`**: Inter-process communication (ipc.c, shm.c)
   - **`kernel/syscall/`**: System call implementation (syscall.c, usermode.c)
   - **`kernel/browser/`**: Browser-specific functionality (html.c, layout.c, network.c)
-  - **`kernel/ux/`**: **NEW** User experience layer (ux.c) - Step 8
+  - **`kernel/ux/`**: User experience layer (ux.c, desktop.c)
 - **`drivers/`**: Hardware drivers, organized by device type:
-  - **`drivers/input/`**: Input devices (keyboard.c with hotkey support, mouse.c, input.c)
-  - **`drivers/video/`**: Video driver (video.c with debug_print for serial-only output)
+  - **`drivers/input/`**: Input devices (keyboard.c, mouse.c, **mouse_smooth.c** ⭐NEW⭐, input.c)
+  - **`drivers/video/`**: Video drivers (video.c, graphics.c, ui.c, **boot_animation.c** ⭐NEW⭐)
   - **`drivers/storage/`**: Storage devices (disk.c)
   - **`drivers/audio/`**: Audio devices (sound.c)
+  - **`drivers/network/`**: Network stack (rtl8139.c, ethernet.c, arp.c, ip.c, icmp.c, tcp.c)
+- **`apps/`**: User applications (notepad.c, calculator.c, sysinfo.c)
 - **`lib/`**: Utility libraries (string.c)
 - **`include/`**: Header files for shared definitions and declarations.
 - **`Makefile`**: Build script for compiling the OS.
