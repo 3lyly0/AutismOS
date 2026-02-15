@@ -68,10 +68,10 @@ void draw_rect(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color) {
         return;
     }
     
-    // Use box-drawing characters for better visuals
-    // ─ (0xC4) horizontal, │ (0xB3) vertical
-    // ┌ (0xDA) top-left, ┐ (0xBF) top-right
-    // └ (0xC0) bottom-left, ┘ (0xD9) bottom-right
+    // Use box-drawing characters for better visuals (CP437 character codes)
+    // 0xC4 (─) horizontal, 0xB3 (│) vertical
+    // 0xDA (┌) top-left, 0xBF (┐) top-right
+    // 0xC0 (└) bottom-left, 0xD9 (┘) bottom-right
     
     // Top and bottom borders
     for (uint32 col = x + 1; col < x + w - 1 && col < SCREEN_WIDTH; col++) {
@@ -171,8 +171,8 @@ void draw_cursor(uint32 x, uint32 y, uint8 visible) {
     int index = (y * SCREEN_WIDTH + x) * 2;
     
     if (visible) {
-        // Enhanced cursor: use block character (█ 0xDB) for better visibility
-        video[index] = 0xDB;  // █ full block
+        // Enhanced cursor: use CP437 block character 0xDB (█) for better visibility
+        video[index] = 0xDB;  // CP437 full block
         video[index + 1] = make_color_attr(COLOR_WHITE, COLOR_BLACK);
     } else {
         // Clear cursor
@@ -223,20 +223,20 @@ void draw_shadow_box(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color) {
     volatile char *video = VIDEO_MEMORY;
     uint8 shadow_attr = make_color_attr(COLOR_DARK_GRAY, COLOR_BLACK);
     
-    // Right shadow
+    // Right shadow using CP437 light shade character 0xB0 (░)
     for (uint32 row = y + 1; row <= y + h && row < SCREEN_HEIGHT; row++) {
         if (x + w < SCREEN_WIDTH) {
             int index = (row * SCREEN_WIDTH + x + w) * 2;
-            video[index] = 0xB0;  // ░ light shade
+            video[index] = 0xB0;  // CP437 light shade
             video[index + 1] = shadow_attr;
         }
     }
     
-    // Bottom shadow
+    // Bottom shadow using CP437 light shade character 0xB0 (░)
     for (uint32 col = x + 1; col <= x + w && col < SCREEN_WIDTH; col++) {
         if (y + h < SCREEN_HEIGHT) {
             int index = ((y + h) * SCREEN_WIDTH + col) * 2;
-            video[index] = 0xB0;  // ░ light shade
+            video[index] = 0xB0;  // CP437 light shade
             video[index + 1] = shadow_attr;
         }
     }
@@ -260,17 +260,17 @@ void draw_progress_bar(uint32 x, uint32 y, uint32 w, uint32 percent, uint8 color
     // Calculate filled width
     uint32 filled = (w * percent) / 100;
     
-    // Draw filled portion with solid blocks
+    // Draw filled portion with CP437 solid blocks 0xDB (█)
     for (uint32 col = x; col < x + filled && col < SCREEN_WIDTH; col++) {
         int index = (y * SCREEN_WIDTH + col) * 2;
-        video[index] = 0xDB;  // █ full block
+        video[index] = 0xDB;  // CP437 full block
         video[index + 1] = bar_attr;
     }
     
-    // Draw empty portion with light blocks
+    // Draw empty portion with CP437 light blocks 0xB0 (░)
     for (uint32 col = x + filled; col < x + w && col < SCREEN_WIDTH; col++) {
         int index = (y * SCREEN_WIDTH + col) * 2;
-        video[index] = 0xB0;  // ░ light shade
+        video[index] = 0xB0;  // CP437 light shade
         video[index + 1] = empty_attr;
     }
 }
