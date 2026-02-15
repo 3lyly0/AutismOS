@@ -44,6 +44,7 @@ void textbox_handle_char(textbox_t* box, char ch);
 void textbox_handle_backspace(textbox_t* box);
 void textbox_clear(textbox_t* box);
 const char* textbox_get_text(textbox_t* box);
+void textbox_set_text(textbox_t* box, const char* text);
 
 // Focus management
 void ui_set_focus(focus_type_t type, void* element);

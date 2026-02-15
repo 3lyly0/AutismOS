@@ -37,6 +37,7 @@ void draw_cursor(uint32 x, uint32 y, uint8 visible);
 void draw_text_with_bg(uint32 x, uint32 y, const char* text, uint8 fg_color, uint8 bg_color);
 void draw_char_with_bg(uint32 x, uint32 y, char ch, uint8 fg_color, uint8 bg_color);
 void draw_shadow_box(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color);
+void draw_progress_bar(uint32 x, uint32 y, uint32 w, uint32 percent, uint8 color);
 
 // Screen operations
 void graphics_clear_screen(uint8 color);
