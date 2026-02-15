@@ -78,13 +78,13 @@ void textbox_render(textbox_t* box) {
         }
         
         if (text_len > visible_chars && box->w > 4) {
-            // Show left arrow if we're scrolled
+            // Show left arrow (CP437 0x11) if we're scrolled
             if (start_offset > 0) {
-                draw_char(box->x + 1, text_y, 0x11, COLOR_YELLOW);  // ◄
+                draw_char(box->x + 1, text_y, 0x11, COLOR_YELLOW);  // CP437 left arrow
             }
-            // Show right arrow if there's more text
+            // Show right arrow (CP437 0x10) if there's more text
             if (start_offset + visible_chars < text_len) {
-                draw_char(box->x + box->w - 2, text_y, 0x10, COLOR_YELLOW);  // ►
+                draw_char(box->x + box->w - 2, text_y, 0x10, COLOR_YELLOW);  // CP437 right arrow
             }
         }
     }
