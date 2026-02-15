@@ -126,7 +126,6 @@ void desktop_draw_window(window_t* w) {
         
         for (uint32 col = w->x + 1; col < w->x + w->width - 1; col++) {
             int index = (w->y * 80 + col) * 2;
-            video[index] = ' ';
             video[index + 1] = (title_bg << 4) | COLOR_WHITE;
         }
         
