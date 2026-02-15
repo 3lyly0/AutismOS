@@ -4,7 +4,6 @@
 #include "video.h"
 #include "io_ports.h"
 #include "isr.h"
-#include "string.h"
 #include "desktop.h"
 
 // Smooth mouse state
@@ -151,7 +150,6 @@ void mouse_smooth_handler(REGISTERS *r __attribute__((unused))) {
             ds->mouse_buttons = g_smooth_mouse_buttons;
             
             // Draw mouse immediately from IRQ
-            extern void desktop_draw_mouse_direct(void);
             desktop_draw_mouse_direct();
         }
     }

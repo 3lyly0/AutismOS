@@ -70,6 +70,8 @@ void boot_animation_frame_5(void) {
     graphics_clear_screen(COLOR_BLACK);
     
     // Complete logo with full colors
+    // Note: X coordinate is 6 (not 24) because frame 5 shows the complete 6-line logo
+    // which is wider and needs to be positioned further left to fit on screen
     draw_text(6, 6, " █████╗ ██╗   ██╗████████╗██╗███████╗███╗   ███╗ ██████╗ ███████╗", COLOR_LIGHT_CYAN);
     draw_text(6, 7, "██╔══██╗██║   ██║╚══██╔══╝██║██╔════╝████╗ ████║██╔═══██╗██╔════╝", COLOR_LIGHT_CYAN);
     draw_text(6, 8, "███████║██║   ██║   ██║   ██║███████╗██╔████╔██║██║   ██║███████╗", COLOR_CYAN);
