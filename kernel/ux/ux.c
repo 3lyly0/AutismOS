@@ -3,6 +3,7 @@
 #include "graphics.h"
 #include "ui.h"
 #include "string.h"
+#include "boot_animation.h"
 
 // Global UX state (persists in kernel memory)
 static ux_state_t g_ux_state;
@@ -25,11 +26,10 @@ void ux_init(void) {
     ui_init();
 }
 
-// Show clean boot screen
+// Show clean boot screen with animation
 void ux_show_boot_screen(void) {
-    graphics_clear_screen(COLOR_BLACK);
-    draw_text(30, 10, "AutismOS v1.0", COLOR_LIGHT_CYAN);
-    draw_text(28, 12, "Booting Desktop...", COLOR_YELLOW);
+    // Play the boot animation
+    boot_animation_play();
 }
 
 // Initialize UI components (Step 9)
