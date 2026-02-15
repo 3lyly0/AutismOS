@@ -3,4 +3,4 @@ build/
 *.bin
 *.o
 isodir/
-.gitignore
+.gitignore_codeql_detected_source_root
