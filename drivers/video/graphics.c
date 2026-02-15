@@ -16,27 +16,30 @@ static inline uint8 make_color_attr(uint8 fg, uint8 bg) {
     return (bg << 4) | (fg & 0x0F);
 }
 
-// Clear entire screen with a color
+// Clear entire screen with a color - optimized
 void graphics_clear_screen(uint8 color) {
-    volatile char *video = VIDEO_MEMORY;
     uint8 attr = make_color_attr(color, COLOR_BLACK);
     
+    // Optimize by writing both character and attribute at once
+    volatile uint16 *video16 = (volatile uint16 *)VIDEO_MEMORY;
+    uint16 fill_value = (' ' | (attr << 8));
+    
     for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
-        video[i * 2] = ' ';
-        video[i * 2 + 1] = attr;
+        video16[i] = fill_value;
     }
 }
 
-// Clear a region of the screen
+// Clear a region of the screen - optimized
 void graphics_clear_region(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color) {
-    volatile char *video = VIDEO_MEMORY;
     uint8 attr = make_color_attr(color, COLOR_BLACK);
+    uint16 fill_value = (' ' | (attr << 8));
     
     for (uint32 row = y; row < y + h && row < SCREEN_HEIGHT; row++) {
-        for (uint32 col = x; col < x + w && col < SCREEN_WIDTH; col++) {
-            int index = (row * SCREEN_WIDTH + col) * 2;
-            video[index] = ' ';
-            video[index + 1] = attr;
+        volatile uint16 *video16 = (volatile uint16 *)(VIDEO_MEMORY + (row * SCREEN_WIDTH + x) * 2);
+        uint32 count = (x + w <= SCREEN_WIDTH) ? w : (SCREEN_WIDTH - x);
+        
+        for (uint32 i = 0; i < count; i++) {
+            video16[i] = fill_value;
         }
     }
 }
@@ -236,5 +239,38 @@ void draw_shadow_box(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color) {
             video[index] = 0xB0;  // ░ light shade
             video[index + 1] = shadow_attr;
         }
+    }
+}
+
+// Draw a progress bar with percentage
+void draw_progress_bar(uint32 x, uint32 y, uint32 w, uint32 percent, uint8 color) {
+    if (y >= SCREEN_HEIGHT || w < 2) {
+        return;
+    }
+    
+    // Clamp percentage to 0-100
+    if (percent > 100) {
+        percent = 100;
+    }
+    
+    volatile char *video = VIDEO_MEMORY;
+    uint8 bar_attr = make_color_attr(color, COLOR_BLACK);
+    uint8 empty_attr = make_color_attr(COLOR_DARK_GRAY, COLOR_BLACK);
+    
+    // Calculate filled width
+    uint32 filled = (w * percent) / 100;
+    
+    // Draw filled portion with solid blocks
+    for (uint32 col = x; col < x + filled && col < SCREEN_WIDTH; col++) {
+        int index = (y * SCREEN_WIDTH + col) * 2;
+        video[index] = 0xDB;  // █ full block
+        video[index + 1] = bar_attr;
+    }
+    
+    // Draw empty portion with light blocks
+    for (uint32 col = x + filled; col < x + w && col < SCREEN_WIDTH; col++) {
+        int index = (y * SCREEN_WIDTH + col) * 2;
+        video[index] = 0xB0;  // ░ light shade
+        video[index + 1] = empty_attr;
     }
 }

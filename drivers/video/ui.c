@@ -141,6 +141,26 @@ const char* textbox_get_text(textbox_t* box) {
     return box->buffer;
 }
 
+// Set textbox text programmatically
+void textbox_set_text(textbox_t* box, const char* text) {
+    if (!box || !text) return;
+    
+    // Clear existing text
+    memset(box->buffer, 0, TEXTBOX_MAX_LEN);
+    box->cursor_pos = 0;
+    
+    // Copy new text up to max length
+    while (*text && box->cursor_pos < TEXTBOX_MAX_LEN - 1) {
+        box->buffer[box->cursor_pos] = *text;
+        box->cursor_pos++;
+        text++;
+    }
+    box->buffer[box->cursor_pos] = '\0';
+    
+    // Redraw textbox
+    textbox_render(box);
+}
+
 // Set focus to an element
 void ui_set_focus(focus_type_t type, void* element) {
     // Unfocus previous element
