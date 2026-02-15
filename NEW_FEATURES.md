@@ -185,7 +185,7 @@ The requirements specified **not to modify the existing mouse driver**, so we cr
    - Configurable sensitivity
    - Feels more responsive and natural
 
-Both drivers can coexist, and you can choose which one to use by enabling/disabling smooth mode.
+**Note on IRQ Handling**: Both drivers register handlers on IRQ12 (PS/2 mouse interrupt). Since only one handler can be active at a time, the last registered handler (smooth mouse) takes precedence. When smooth mode is enabled, it handles all mouse events. When disabled, the handler is still registered but inactive, allowing future enhancements to switch between drivers.
 
 ### Performance
 - Minimal overhead: IRQ handler is optimized
