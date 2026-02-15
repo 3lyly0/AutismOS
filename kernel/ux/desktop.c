@@ -110,10 +110,15 @@ void desktop_draw_window(window_t* w) {
     // Clear window area
     graphics_clear_region(w->x, w->y, w->width, w->height, COLOR_BLACK);
     
-    // Draw border
-    draw_rect(w->x, w->y, w->width, w->height, w->border_color);
+    // Draw window with shadow for depth perception
+    if (w->focused) {
+        draw_shadow_box(w->x, w->y, w->width, w->height, w->border_color);
+    } else {
+        // Non-focused windows don't get shadow
+        draw_rect(w->x, w->y, w->width, w->height, w->border_color);
+    }
     
-    // Draw title bar
+    // Draw title bar with enhanced styling
     if (w->title[0]) {
         // Title bar background
         volatile char* video = (volatile char*)0xB8000;
@@ -124,7 +129,7 @@ void desktop_draw_window(window_t* w) {
             video[index + 1] = (title_bg << 4) | COLOR_WHITE;
         }
         
-        // Draw title text
+        // Draw title text with proper spacing
         uint32 title_x = w->x + 2;
         for (uint32 i = 0; w->title[i] && title_x < w->x + w->width - 4; i++, title_x++) {
             int index = (w->y * 80 + title_x) * 2;
@@ -132,11 +137,11 @@ void desktop_draw_window(window_t* w) {
             video[index + 1] = (title_bg << 4) | COLOR_WHITE;
         }
         
-        // Draw close button [X]
+        // Draw enhanced close button [X]
         uint32 close_x = w->x + w->width - 3;
         int close_idx = (w->y * 80 + close_x) * 2;
         video[close_idx] = 'X';
-        video[close_idx + 1] = (COLOR_RED << 4) | COLOR_WHITE;
+        video[close_idx + 1] = (COLOR_RED << 4) | COLOR_YELLOW;
     }
     
     // Call app-specific draw function
