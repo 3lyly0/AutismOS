@@ -4,7 +4,35 @@
 #include "types.h"
 
 #define MAX_WINDOWS 8
-#define WINDOW_TITLE_HEIGHT 1
+
+typedef struct {
+    sint32 x;
+    sint32 y;
+    sint32 width;
+    sint32 height;
+} rect_t;
+
+typedef struct {
+    uint32 titlebar_height;
+    uint32 border_thickness;
+    uint32 shadow_size;
+    uint32 close_button_size;
+    uint32 resize_grip_size;
+    uint32 content_padding;
+} desktop_chrome_t;
+
+typedef enum {
+    DESKTOP_HIT_NONE = 0,
+    DESKTOP_HIT_CLIENT = 1,
+    DESKTOP_HIT_TITLEBAR = 2,
+    DESKTOP_HIT_CLOSE = 3,
+    DESKTOP_HIT_RESIZE = 4
+} desktop_hit_region_t;
+
+#define WINDOW_FLAG_VISIBLE    0x01
+#define WINDOW_FLAG_FOCUSED    0x02
+#define WINDOW_FLAG_DRAGGABLE  0x04
+#define WINDOW_FLAG_RESIZABLE  0x08
 
 // Forward declaration for window structure
 typedef struct window_s window_t;
@@ -19,8 +47,12 @@ struct window_s {
     uint8 focused;
     uint8 border_color;
     uint8 title_color;
+    uint32 flags;
+    uint32 min_width;
+    uint32 min_height;
     void (*draw_content)(window_t* w);
     void (*handle_key)(window_t* w, char key);
+    void (*handle_mouse)(window_t* w, sint32 local_x, sint32 local_y, uint8 buttons);
     void* app_data;
 };
 
@@ -35,6 +67,12 @@ typedef struct {
     uint8 initialized;
     uint8 needs_redraw;
     uint8 start_menu_open;
+    uint32 active_window;
+    desktop_hit_region_t active_hit;
+    sint32 drag_offset_x;
+    sint32 drag_offset_y;
+    uint32 resize_origin_width;
+    uint32 resize_origin_height;
 } desktop_t;
 
 // Initialize desktop
@@ -46,6 +84,7 @@ void desktop_activate(void);
 // Check whether keyboard/mouse input should target the desktop shell
 uint8 is_desktop_mode(void);
 void desktop_set_dirty(void);
+const desktop_chrome_t* desktop_get_chrome(void);
 
 // Get desktop state
 desktop_t* desktop_get_state(void);
@@ -70,6 +109,10 @@ window_t* desktop_get_focused(void);
 
 // Focus a window
 void desktop_focus_window(uint32 window_id);
+void desktop_move_window(window_t* w, sint32 x, sint32 y);
+void desktop_resize_window(window_t* w, uint32 width, uint32 height);
+void desktop_get_window_content_rect(const window_t* w, rect_t* rect);
+desktop_hit_region_t desktop_hit_test_window(const window_t* w, sint32 x, sint32 y);
 
 // Draw window frame
 void desktop_draw_window(window_t* w);
