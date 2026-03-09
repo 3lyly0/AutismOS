@@ -1,53 +1,59 @@
 # AutismOS
 
-AutismOS is a minimalistic educational operating system designed for learning low-level system programming, with a focus on bootloading, interrupts, hardware interaction, and **browser-oriented architecture**.
+AutismOS is a small educational operating system for learning bootloading, interrupts, memory, devices, and GUI architecture on x86.
 
 **Latest Achievements:**
-- ✅ **Animated Boot Sequence** - Professional boot animation with progress indicators
-- ✅ **Smooth Mouse Control** - Alternative mouse driver with acceleration and velocity smoothing
+- ✅ **Pixel GUI Desktop** - VGA mode `320x200` desktop with real windows
+- ✅ **Window Manager Foundation** - Focus, z-order, drag, resize, close, and content layout helpers
+- ✅ **Animated Boot Sequence**
 - ✅ **Real Networking Stack**
 
 ---
 
 ## **Current Features**
 
-### ✅ Boot Animation (NEW)
+### ✅ Desktop GUI
 
-Professional animated boot sequence that enhances the user experience:
+AutismOS now boots into a pixel-based desktop instead of a text-mode shell.
 
-#### Animation Features
-- **5-frame progressive reveal** of the AutismOS logo
-- **Dynamic progress bars** showing boot stages (20%, 40%, 60%, 80%, 100%)
-- **Smooth color transitions** from dark gray to bright cyan
-- **Loading indicators** with animated dots
-- **Stage-by-stage messages**:
-  - Initializing...
-  - Loading drivers...
-  - Initializing memory...
-  - Starting desktop environment...
-  - Boot complete!
+#### Current GUI Features
+- **VGA mode `320x200x256`**
+- **Desktop shell** with taskbar and start menu
+- **Window manager basics**:
+  - Focus and z-order
+  - Click-to-focus
+  - Close button
+  - Drag windows by the title bar
+  - Resize windows from the lower-right corner
+- **Bundled apps**:
+  - Notepad
+  - Calculator
+  - System Info
+- **Shared desktop chrome**:
+  - Unified title bars
+  - Shared content rect calculation
+  - Per-window minimum sizes
+- **Custom software rendering** with a backbuffer and bitmap font
 
-### ✅ Smooth Mouse Control (NEW)
+### ✅ Boot Animation
 
-Advanced alternative mouse driver that provides superior control compared to the original PS/2 mouse driver:
+Animated boot sequence for a cleaner startup experience.
 
-#### Smooth Mouse Features
-- **Velocity-based smoothing** - Fluid, responsive cursor movement
-- **Acceleration support** - Faster movements get extra boost for quick navigation
-- **Momentum physics** - Smooth deceleration feels natural
-- **Configurable sensitivity** - Adjust from 1-10 (default: 5)
-- **Runtime switching** - Enable/disable smooth mode at any time
-- **Bounds checking** - Prevents cursor from leaving screen
-- **Works alongside original driver** - Both drivers coexist without modification to original
+#### Boot Animation Features
+- **Multi-stage animated boot**
+- **Progress bar**
+- **Large AutismOS logo**
+- **Transition into the desktop shell**
 
-#### API Functions
-```c
-void mouse_smooth_init(void);              // Initialize smooth mouse
-void mouse_smooth_enable(void);            // Enable smooth mode
-void mouse_smooth_disable(void);           // Disable smooth mode
-void mouse_smooth_set_sensitivity(uint8);  // Set sensitivity (1-10)
-uint8 mouse_smooth_is_enabled(void);       // Check if enabled
-```
+### ✅ Mouse Input
+
+Mouse handling is now based on a single primary PS/2 path tuned for the desktop workflow.
+
+#### Mouse Improvements
+- **Less aggressive movement**
+- **Clamped deltas** to prevent huge jumps
+- **Screen bounds protection**
+- **Better fit for GUI interaction**
 
 ### ✅ Real Networking Stack
 
@@ -88,98 +94,14 @@ Full implementation of a minimal TCP/IP networking stack from hardware to ICMP:
 - No DHCP, No DNS
 - HTTP browser functionality disabled (TCP not implemented)
 
-### ✅ Step 9: Interactive Graphics UI & In-Page Interaction (COMPLETE + ENHANCED)
+### ✅ System Foundations
 
-The transformation from text-based interface to true graphical interaction:
-
-#### Graphics Primitives (Enhanced)
-- **Drawing operations** for rectangles, text, characters, and cursor
-- **VGA text mode graphics** with color support
-- **Box-drawing characters** (┌─┐│└┘) for professional-looking borders
-- **Enhanced cursor** with full block character (█) for better visibility
-- **Shadow effects** (░) for depth perception on focused windows
-- **Progress bars** with visual fill indicators (█ filled, ░ empty)
-- **Optimized rendering** using 16-bit memory writes (2x faster clear operations)
-- **Partial redraw model** - only update changed regions
-- **No full screen clears** - maintains visual stability
-
-#### UI Components (Enhanced)
-- **Textbox widget** with visual borders and focus indication
-- **Enhanced focus feedback** with cyan borders and subtle highlighting
-- **Scroll indicators** (◄►) for text that exceeds visible area
-- **Input validation** - only printable ASCII characters (32-126)
-- **Programmatic text control** - textbox_set_text() function
-- **Focus management** - only one element receives input at a time
-- **Caret blinking** using timer interrupts (~500ms)
-- **Visual feedback** - focused elements highlighted
-
-#### Interactive Flow
-- **URL input field** - users can type directly on screen
-- **Enter key submission** - press Enter to navigate
-- **In-page rendering** - content appears without mode switches
-- **Live updates** - typed characters appear immediately
-- **No debug logs** visible to user - clean experience
-
-#### User Experience
-- **Graphical boot screen** with ASCII art logo
-- **Ready screen** with URL input and instructions
-- **Content area** for page display
-- **Keyboard-driven** interaction
-- **Feels alive** - responsive and interactive
-
-### ✅ Step 8: User Experience Kernel (COMPLETE)
-
-The transformation from technical demo to real OS:
-
-#### Clean Boot Experience
-- **UX Kernel Module** manages the user experience layer
-- **Boot screen** with AutismOS ASCII art logo
-- **Clean UI** after boot showing system status and shortcuts
-- **Silent mode** - debug logs only to serial port, not screen
-- **No technical spam** - users see a clean interface, not kernel chatter
-
-#### Control Loop & Interactivity
-- **Keyboard shortcuts** for system control
-  - `Alt+B` - Focus Browser
-  - `Alt+Q` - Quit Application
-- **Hotkey handler** integrated with keyboard driver
-- **Immediate response** to user input
-
-#### Identity & Default Behavior
-- **Browser-First OS** - boots directly into browser-ready state
-- **Default URL** loaded automatically (http://example.com/)
-- **Clear purpose** - "Browser-First Operating System"
-
-#### Focus & Persistence
-- **Active process tracking** (Browser PID=1 has focus)
-- **URL persistence** stored in kernel memory
-- **State survives** within boot session
-- **Visual feedback** showing active app and current URL
-
-### ✅ Steps 6 & 7: Browser-Capable Operating System (COMPLETE)
-
-#### Step 6: Shared Memory, Graphics & Rendering
-- **Shared memory syscalls** (SYS_SHM_CREATE, SYS_SHM_MAP, SYS_SHM_UNMAP)
-- **Zero-copy framebuffer** rendering between processes
-- **Framebuffer structure** (320×200 resolution, 32-bit RGBA)
-- **Frame events** via IPC (FRAME_READY notifications)
-- **Security**: Reference counting, PID ownership, size limits
-
-#### Step 7: Input, Networking & Browser Core
-- **Input delivery** via IPC (keyboard and mouse events)
-- **URL parsing** for http:// protocol
-- **Real networking stack** (RTL8139, Ethernet, ARP, IP, ICMP)
-- **ICMP ping** to external IP addresses
-- **HTML parser** supporting html, body, h1, p, a tags
-- **Layout engine** with vertical flow (primitive but functional)
-- **Text rendering** to framebuffer with fixed-width font
-- **Browser main loop** with complete event-driven architecture
-- **Complete pipeline**: IP → Ping → Parse → Layout → Render → Display
-
-### ✅ Previous Steps
-- **Step 5**: IPC, Messaging & Event-Driven Execution
-- **Step 0-4**: Process abstraction, memory management, task scheduling, interrupts, syscalls
-- Bootloader and kernel initialization
+- **Bootloader and protected-mode kernel startup**
+- **GDT / IDT / ISR setup**
+- **Paging and heap bootstrap**
+- **Task and process scaffolding**
+- **IPC and shared memory primitives**
+- **PCI and RTL8139 device discovery**
 
 ---
 
@@ -229,14 +151,27 @@ This will:
 - Generate the ISO file (`autismos.iso`).
 
 #### **4. Run the Operating System**
-After building the OS, you can run it using QEMU:
+After building the OS, you can run it using QEMU.
+
+**Base command:**
 ```bash
 qemu-system-x86_64 -cdrom autismos.iso -device isa-debug-exit,iobase=0x8900,iosize=0x04
 ```
 
-- **Explanation**:
-  - `-cdrom autismos.iso`: Specifies the ISO file to boot from.
-  - `-device isa-debug-exit,iobase=0x8900,iosize=0x04`: Allows QEMU to exit cleanly when the OS halts.
+**Recommended for a larger QEMU window:**
+```bash
+qemu-system-x86_64 -cdrom autismos.iso -device isa-debug-exit,iobase=0x8900,iosize=0x04 -display gtk,zoom-to-fit=on
+```
+
+**Recommended for the largest view:**
+```bash
+qemu-system-x86_64 -cdrom autismos.iso -device isa-debug-exit,iobase=0x8900,iosize=0x04 -display gtk,zoom-to-fit=on -full-screen
+```
+
+- `-cdrom autismos.iso`: Boot from the generated ISO.
+- `-device isa-debug-exit,...`: Let QEMU exit cleanly when the guest requests it.
+- `-display gtk,zoom-to-fit=on`: Makes the tiny guest display easier to see on modern monitors.
+- `-full-screen`: Best option if you want the desktop to feel much larger immediately.
 
 ---
 
@@ -251,72 +186,31 @@ If you make changes to the source code, follow these steps to rebuild and run th
 
 2. **Run the OS**:
    ```bash
-   qemu-system-x86_64 -cdrom autismos.iso -device isa-debug-exit,iobase=0x8900,iosize=0x04
+   qemu-system-x86_64 -cdrom autismos.iso -device isa-debug-exit,iobase=0x8900,iosize=0x04 -display gtk,zoom-to-fit=on
    ```
 
 ---
 
 ### **What You'll See**
 
-When you run AutismOS, you'll experience a **clean, interactive graphical interface** (Step 9):
+When you run AutismOS, you'll see:
 
-#### On Screen (VGA Display):
+- An animated boot screen
+- A pixel desktop shell
+- A taskbar and start menu
+- Large desktop windows for Notepad, Calculator, and System Info
+- A visible software mouse cursor
 
-**Boot Screen:**
-```
-  █████╗ ██╗   ██╗████████╗██╗███████╗███╗   ███╗ ██████╗ ███████╗
- ██╔══██╗██║   ██║╚══██╔══╝██║██╔════╝████╗ ████║██╔═══██╗██╔════╝
- ███████║██║   ██║   ██║   ██║███████╗██╔████╔██║██║   ██║███████╗
- ██╔══██║██║   ██║   ██║   ██║╚════██║██║╚██╔╝██║██║   ██║╚════██║
- ██║  ██║╚██████╔╝   ██║   ██║███████║██║ ╚═╝ ██║╚██████╔╝███████║
- ╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚══════╝
+#### Notes About Window Size
 
-                    Browser-First Operating System
+The guest resolution is currently **320x200**, so without QEMU scaling it will look physically small on modern displays.
 
-  Booting...
-```
+If the desktop feels tiny, use one of these:
+- `-display gtk,zoom-to-fit=on`
+- `-full-screen`
+- QEMU's own zoom controls if your frontend supports them
 
-**Interactive Browser Screen (Step 9):**
-```
-+----------------------------------------------------------------------------+
-| AutismOS - Browser                                                         |
-+----------------------------------------------------------------------------+
-
-URL: +----------------------------------------------------------+
-     | http://example.com/                                   _  |
-     +----------------------------------------------------------+
-
-
-Press ENTER to navigate
-Type to edit URL
-
-+----------------------------------------------------------------------------+
-| Content will appear here...                                                |
-|                                                                            |
-+----------------------------------------------------------------------------+
-```
-
-**Key Features:**
-- ✅ **Graphical interface** with borders and visual structure
-- ✅ **Interactive URL textbox** - type directly, see characters appear
-- ✅ **Blinking cursor** shows where you're typing
-- ✅ **Enter key** to submit and load pages
-- ✅ **In-page updates** - no screen clearing
-- ✅ **Visual feedback** - focused elements highlighted
-- ✅ **Clean separation** between UI and content areas
-
-#### Behind the Scenes:
-- Renderer process (PID=0) fetches and renders pages
-- Browser process (PID=1) handles UI and input
-- Monitor process (PID=2) tracks system stats
-- All debug output goes to **serial port only** (use `-serial stdio` to see it)
-
-**Key Features:**
-- ✅ Clean boot with no technical spam
-- ✅ Immediate interactivity (keyboard shortcuts work)
-- ✅ Clear system identity and purpose
-- ✅ Professional look and feel
-- ✅ Three processes working seamlessly in background
+Inside the guest itself, the bundled application windows are now larger by default and support dragging and resizing.
 
 
 ---
@@ -330,42 +224,34 @@ Type to edit URL
 
 ---
 
-### **Enhanced Graphics API**
+### **Graphics API**
 
-The graphics system has been significantly enhanced with professional visual elements:
+The graphics system is now centered around a pixel framebuffer in VGA mode:
 
 #### Core Graphics Functions
-- `graphics_init()` - Initialize graphics subsystem
-- `graphics_clear_screen(color)` - Clear entire screen (optimized 16-bit writes)
-- `graphics_clear_region(x, y, w, h, color)` - Clear specific region (optimized)
+- `graphics_init()` - switch to VGA graphics mode
+- `graphics_present()` - copy the backbuffer to VRAM
+- `graphics_clear_screen(color)` - clear the entire backbuffer
+- `graphics_clear_region(x, y, w, h, color)` - clear part of the backbuffer
 
 #### Drawing Primitives
-- `draw_rect(x, y, w, h, color)` - Rectangle with box-drawing characters (┌─┐│└┘)
+- `draw_pixel(x, y, color)` - plot one pixel
+- `draw_line(x0, y0, x1, y1, color)` - draw a line
+- `draw_rect(x, y, w, h, color)` - rectangle outline
 - `draw_filled_rect(x, y, w, h, color)` - Solid filled rectangle
-- `draw_shadow_box(x, y, w, h, color)` - Rectangle with shadow effect (░)
 - `draw_char(x, y, ch, color)` - Single character
 - `draw_text(x, y, text, color)` - Text string
+- `draw_text_scaled(x, y, text, color, scale)` - Scaled text
 - `draw_char_with_bg(x, y, ch, fg, bg)` - Character with custom colors
 - `draw_text_with_bg(x, y, text, fg, bg)` - Text with custom colors
-- `draw_cursor(x, y, visible)` - Enhanced cursor (█)
+- `draw_cursor(x, y, visible)` - Software mouse cursor
 - `draw_progress_bar(x, y, w, percent, color)` - Visual progress indicator
 
-#### UI Components
-- `textbox_init(box, x, y, w, h)` - Initialize textbox
-- `textbox_render(box)` - Render textbox with enhanced visuals
-- `textbox_handle_char(box, ch)` - Handle character input (validated)
-- `textbox_handle_backspace(box)` - Handle backspace
-- `textbox_set_text(box, text)` - Set text programmatically
-- `textbox_get_text(box)` - Get current text
-- `textbox_clear(box)` - Clear textbox
-
-#### Visual Enhancements
-- ✨ **Box-drawing characters** for professional borders
-- ✨ **Shadow effects** for depth perception
-- ✨ **Scroll indicators** (◄►) for long text
-- ✨ **Enhanced cursor** with full block character
-- ✨ **Optimized rendering** - 2x faster clear operations
-- ✨ **Input validation** - printable ASCII only (32-126)
+#### Windowing Helpers
+- `desktop_get_window_content_rect(...)`
+- `desktop_hit_test_window(...)`
+- `desktop_move_window(...)`
+- `desktop_resize_window(...)`
 
 ---
 
@@ -380,8 +266,8 @@ The graphics system has been significantly enhanced with professional visual ele
   - **`kernel/browser/`**: Browser-specific functionality (html.c, layout.c, network.c)
   - **`kernel/ux/`**: User experience layer (ux.c, desktop.c)
 - **`drivers/`**: Hardware drivers, organized by device type:
-  - **`drivers/input/`**: Input devices (keyboard.c, mouse.c, **mouse_smooth.c** ⭐NEW⭐, input.c)
-  - **`drivers/video/`**: Video drivers (video.c, graphics.c, ui.c, **boot_animation.c** ⭐NEW⭐)
+- **`drivers/input/`**: Input devices (keyboard.c, mouse.c, **mouse_smooth.c** ⭐NEW⭐, input.c)
+- **`drivers/video/`**: Video drivers (video.c, graphics.c, ui.c, **boot_animation.c** ⭐NEW⭐)
   - **`drivers/storage/`**: Storage devices (disk.c)
   - **`drivers/audio/`**: Audio devices (sound.c)
   - **`drivers/network/`**: Network stack (rtl8139.c, ethernet.c, arp.c, ip.c, icmp.c, tcp.c)
@@ -410,7 +296,20 @@ If you cannot see your files inside the Docker container, ensure you are using t
   docker run --rm -it -v "$(pwd):/env" dev
   ```
 
-#### **2. QEMU Exits Immediately**
+#### **2. QEMU Window Is Too Small**
+The guest still renders at `320x200`, so the host window can look tiny.
+
+Try:
+```bash
+qemu-system-x86_64 -cdrom autismos.iso -device isa-debug-exit,iobase=0x8900,iosize=0x04 -display gtk,zoom-to-fit=on
+```
+
+Or:
+```bash
+qemu-system-x86_64 -cdrom autismos.iso -device isa-debug-exit,iobase=0x8900,iosize=0x04 -display gtk,zoom-to-fit=on -full-screen
+```
+
+#### **3. QEMU Exits Immediately**
 Ensure the ISO file (`autismos.iso`) exists in the current directory. If not, rebuild the OS using:
 ```bash
 make
@@ -428,48 +327,13 @@ This project is licensed under the GNU General Public License (GPL) Version 3. S
 
 ---
 
-## **Step 9: How to Experience the Interactive UI**
+## **Current Interaction Model**
 
-The interactive UI is best experienced by running AutismOS in QEMU with a graphical display:
-
-### **Interactive Mode (Recommended)**
-```bash
-# Build the OS
-make
-
-# Run with graphical display
-qemu-system-x86_64 -cdrom autismos.iso
-```
-
-This opens a window showing:
-1. **Boot screen** with AutismOS ASCII art logo
-2. **Interactive browser** with URL textbox
-3. **Blinking cursor** in the input field
-4. **Live typing** - characters appear as you type
-5. **Content area** for page display
-
-### **Keyboard Interaction**
 When the QEMU window has focus:
-- **Type** - Characters appear in the URL textbox
-- **Backspace** - Delete characters
-- **Enter** - Submit URL and load page
-- **Alt+B** - Focus browser (already focused by default)
-- **Alt+Q** - Quit
-
-### **Headless Mode (Debug)**
-```bash
-# Run without display (serial output only)
-qemu-system-x86_64 -cdrom autismos.iso -serial stdio -nographic
-```
-
-Note: In headless mode, you'll only see kernel debug output. The interactive UI requires a graphical display to fully experience.
-
-### **What You'll Notice**
-- ✨ **Immediate feedback** - Type and see characters instantly
-- ✨ **Blinking cursor** - Shows system is alive and ready
-- ✨ **Visual structure** - Clear UI layout with borders
-- ✨ **No screen clears** - Updates happen in-place
-- ✨ **Professional feel** - System responds like a real OS
-
-This is the **emotional turning point** where AutismOS transforms from a technical demo into something that feels genuinely usable.
+- Click windows to focus them
+- Drag by the title bar
+- Resize from the lower-right corner
+- Click the start button to open the launcher
+- Press `1`, `2`, or `3` while the launcher is open to spawn apps
+- Type into the focused app
 

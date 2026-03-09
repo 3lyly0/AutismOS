@@ -147,13 +147,13 @@ void calculator_handle_key(window_t* win, char key) {
 }
 
 window_t* calculator_create(void) {
-    window_t* win = desktop_create_window("Calculator", 86, 32, 170, 120);
+    window_t* win = desktop_create_window("Calculator", 84, 24, 188, 132);
     if (!win) {
         return NULL;
     }
 
-    win->min_width = 150;
-    win->min_height = 110;
+    win->min_width = 160;
+    win->min_height = 118;
     win->draw_content = calculator_draw;
     win->handle_key = calculator_handle_key;
     get_calc_state(win);
