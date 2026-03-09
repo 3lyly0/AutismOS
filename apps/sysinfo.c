@@ -51,12 +51,14 @@ static sysinfo_state_t* get_state(window_t* win) {
 void sysinfo_draw(window_t* win) {
     sysinfo_state_t* state = get_state(win);
     rect_t content;
+    uint32 ticks32;
     if (!win || !state) {
         return;
     }
 
     char num[16];
     desktop_get_window_content_rect(win, &content);
+    ticks32 = (uint32)g_timer_ticks;
 
     draw_text((uint32)content.x + 4, (uint32)content.y + 8, "AutismOS build", COLOR_BLACK);
     draw_text((uint32)content.x + 4, (uint32)content.y + 24, "Display: VGA 320x200", COLOR_BLACK);
@@ -64,12 +66,12 @@ void sysinfo_draw(window_t* win) {
     draw_text((uint32)content.x + 4, (uint32)content.y + 54, "Windows: drag, resize, maximize", COLOR_BLACK);
 
     draw_text((uint32)content.x + 4, (uint32)content.y + 74, "Ticks:", COLOR_BLACK);
-    uint_to_str((uint32)g_timer_ticks, num);
+    uint_to_str(ticks32, num);
     draw_text((uint32)content.x + 48, (uint32)content.y + 74, num, COLOR_BLUE);
 
     draw_text((uint32)content.x + 4, (uint32)content.y + 90, "Status:", COLOR_BLACK);
     draw_text((uint32)content.x + 48, (uint32)content.y + 90, "Running", COLOR_GREEN);
-    draw_progress_bar((uint32)content.x + 4, (uint32)content.y + 108, 100, (uint32)(g_timer_ticks % 100), COLOR_GREEN);
+    draw_progress_bar((uint32)content.x + 4, (uint32)content.y + 108, 100, ticks32 % 100, COLOR_GREEN);
 
     draw_text((uint32)content.x + 4, (uint32)content.y + 124, "R refreshes", COLOR_DARK_GRAY);
     state->update_counter++;
