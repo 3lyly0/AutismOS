@@ -1,276 +1,292 @@
 #include "graphics.h"
 #include "video.h"
 #include "types.h"
+#include "string.h"
+#include "io_ports.h"
 
-#define VIDEO_MEMORY ((volatile char *)0xB8000)
-#define SCREEN_WIDTH 80
-#define SCREEN_HEIGHT 25
+#define VGA_MEMORY ((volatile uint8*)0xA0000)
+#define FRAMEBUFFER_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT)
+#define FONT_WIDTH 5
+#define FONT_HEIGHT 7
+#define FONT_SPACING 1
+#define TITLE_BAR_HEIGHT 18
 
-// Initialize graphics subsystem
+static uint8 g_backbuffer[FRAMEBUFFER_SIZE];
+static uint8 g_graphics_initialized = 0;
+
+static const uint8 g_font[95][5] = {
+    {0x00,0x00,0x00,0x00,0x00},{0x00,0x00,0x5F,0x00,0x00},{0x00,0x07,0x00,0x07,0x00},
+    {0x14,0x7F,0x14,0x7F,0x14},{0x24,0x2A,0x7F,0x2A,0x12},{0x23,0x13,0x08,0x64,0x62},
+    {0x36,0x49,0x55,0x22,0x50},{0x00,0x05,0x03,0x00,0x00},{0x00,0x1C,0x22,0x41,0x00},
+    {0x00,0x41,0x22,0x1C,0x00},{0x14,0x08,0x3E,0x08,0x14},{0x08,0x08,0x3E,0x08,0x08},
+    {0x00,0x50,0x30,0x00,0x00},{0x08,0x08,0x08,0x08,0x08},{0x00,0x60,0x60,0x00,0x00},
+    {0x20,0x10,0x08,0x04,0x02},{0x3E,0x51,0x49,0x45,0x3E},{0x00,0x42,0x7F,0x40,0x00},
+    {0x42,0x61,0x51,0x49,0x46},{0x21,0x41,0x45,0x4B,0x31},{0x18,0x14,0x12,0x7F,0x10},
+    {0x27,0x45,0x45,0x45,0x39},{0x3C,0x4A,0x49,0x49,0x30},{0x01,0x71,0x09,0x05,0x03},
+    {0x36,0x49,0x49,0x49,0x36},{0x06,0x49,0x49,0x29,0x1E},{0x00,0x36,0x36,0x00,0x00},
+    {0x00,0x56,0x36,0x00,0x00},{0x08,0x14,0x22,0x41,0x00},{0x14,0x14,0x14,0x14,0x14},
+    {0x00,0x41,0x22,0x14,0x08},{0x02,0x01,0x51,0x09,0x06},{0x32,0x49,0x79,0x41,0x3E},
+    {0x7E,0x11,0x11,0x11,0x7E},{0x7F,0x49,0x49,0x49,0x36},{0x3E,0x41,0x41,0x41,0x22},
+    {0x7F,0x41,0x41,0x22,0x1C},{0x7F,0x49,0x49,0x49,0x41},{0x7F,0x09,0x09,0x09,0x01},
+    {0x3E,0x41,0x49,0x49,0x7A},{0x7F,0x08,0x08,0x08,0x7F},{0x00,0x41,0x7F,0x41,0x00},
+    {0x20,0x40,0x41,0x3F,0x01},{0x7F,0x08,0x14,0x22,0x41},{0x7F,0x40,0x40,0x40,0x40},
+    {0x7F,0x02,0x0C,0x02,0x7F},{0x7F,0x04,0x08,0x10,0x7F},{0x3E,0x41,0x41,0x41,0x3E},
+    {0x7F,0x09,0x09,0x09,0x06},{0x3E,0x41,0x51,0x21,0x5E},{0x7F,0x09,0x19,0x29,0x46},
+    {0x46,0x49,0x49,0x49,0x31},{0x01,0x01,0x7F,0x01,0x01},{0x3F,0x40,0x40,0x40,0x3F},
+    {0x1F,0x20,0x40,0x20,0x1F},{0x3F,0x40,0x38,0x40,0x3F},{0x63,0x14,0x08,0x14,0x63},
+    {0x07,0x08,0x70,0x08,0x07},{0x61,0x51,0x49,0x45,0x43},{0x00,0x7F,0x41,0x41,0x00},
+    {0x02,0x04,0x08,0x10,0x20},{0x00,0x41,0x41,0x7F,0x00},{0x04,0x02,0x01,0x02,0x04},
+    {0x40,0x40,0x40,0x40,0x40},{0x00,0x01,0x02,0x04,0x00},{0x20,0x54,0x54,0x54,0x78},
+    {0x7F,0x48,0x44,0x44,0x38},{0x38,0x44,0x44,0x44,0x20},{0x38,0x44,0x44,0x48,0x7F},
+    {0x38,0x54,0x54,0x54,0x18},{0x08,0x7E,0x09,0x01,0x02},{0x08,0x14,0x54,0x54,0x3C},
+    {0x7F,0x08,0x04,0x04,0x78},{0x00,0x44,0x7D,0x40,0x00},{0x20,0x40,0x44,0x3D,0x00},
+    {0x7F,0x10,0x28,0x44,0x00},{0x00,0x41,0x7F,0x40,0x00},{0x7C,0x04,0x18,0x04,0x78},
+    {0x7C,0x08,0x04,0x04,0x78},{0x38,0x44,0x44,0x44,0x38},{0x7C,0x14,0x14,0x14,0x08},
+    {0x08,0x14,0x14,0x18,0x7C},{0x7C,0x08,0x04,0x04,0x08},{0x48,0x54,0x54,0x54,0x20},
+    {0x04,0x3F,0x44,0x40,0x20},{0x3C,0x40,0x40,0x20,0x7C},{0x1C,0x20,0x40,0x20,0x1C},
+    {0x3C,0x40,0x30,0x40,0x3C},{0x44,0x28,0x10,0x28,0x44},{0x0C,0x50,0x50,0x50,0x3C},
+    {0x44,0x64,0x54,0x4C,0x44},{0x00,0x08,0x36,0x41,0x00},{0x00,0x00,0x7F,0x00,0x00},
+    {0x00,0x41,0x36,0x08,0x00},{0x08,0x08,0x2A,0x1C,0x08}
+};
+
+static const uint8 g_mode_13h_regs[] = {
+    0x63,
+    0x03,0x01,0x0F,0x00,0x0E,
+    0x5F,0x4F,0x50,0x82,0x54,0x80,0xBF,0x1F,0x00,0x41,0x00,0x00,0x00,0x00,0x00,0x00,0x9C,0x0E,0x8F,0x28,0x40,0x96,0xB9,0xA3,0xFF,
+    0x00,0x00,0x00,0x00,0x00,0x40,0x05,0x0F,0xFF,
+    0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F,0x41,0x00,0x0F,0x00,0x00
+};
+
+static void write_vga_regs(const uint8* regs) {
+    outportb(0x3C2, *regs++);
+
+    for (uint32 i = 0; i < 5; i++) {
+        outportb(0x3C4, i);
+        outportb(0x3C5, *regs++);
+    }
+
+    outportb(0x3D4, 0x03);
+    outportb(0x3D5, inportb(0x3D5) | 0x80);
+    outportb(0x3D4, 0x11);
+    outportb(0x3D5, inportb(0x3D5) & ~0x80);
+
+    for (uint32 i = 0; i < 25; i++) {
+        outportb(0x3D4, i);
+        outportb(0x3D5, *regs++);
+    }
+
+    for (uint32 i = 0; i < 9; i++) {
+        outportb(0x3CE, i);
+        outportb(0x3CF, *regs++);
+    }
+
+    for (uint32 i = 0; i < 21; i++) {
+        inportb(0x3DA);
+        outportb(0x3C0, i);
+        outportb(0x3C0, *regs++);
+    }
+
+    inportb(0x3DA);
+    outportb(0x3C0, 0x20);
+}
+
+static const uint8* glyph_for_char(char ch) {
+    if (ch < 32 || ch > 126) {
+        ch = '?';
+    }
+    return g_font[(uint8)ch - 32];
+}
+
+uint8 graphics_is_initialized(void) {
+    return g_graphics_initialized;
+}
+
+void graphics_present(void) {
+    if (!g_graphics_initialized) {
+        return;
+    }
+
+    memcpy((void*)VGA_MEMORY, g_backbuffer, FRAMEBUFFER_SIZE);
+}
+
 void graphics_init(void) {
-    // No special initialization needed for VGA text mode
+    write_vga_regs(g_mode_13h_regs);
+    memset(g_backbuffer, COLOR_BLACK, sizeof(g_backbuffer));
+    g_graphics_initialized = 1;
+    graphics_present();
 }
 
-// Helper to make color attribute byte
-static inline uint8 make_color_attr(uint8 fg, uint8 bg) {
-    return (bg << 4) | (fg & 0x0F);
+void draw_pixel(int32 x, int32 y, uint8 color) {
+    if (x < 0 || y < 0 || x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
+        return;
+    }
+
+    g_backbuffer[y * SCREEN_WIDTH + x] = color;
 }
 
-// Clear entire screen with a color - optimized
+void draw_line(int32 x0, int32 y0, int32 x1, int32 y1, uint8 color) {
+    int32 dx = (x1 > x0) ? (x1 - x0) : (x0 - x1);
+    int32 sx = (x0 < x1) ? 1 : -1;
+    int32 dy = (y1 > y0) ? -(y1 - y0) : -(y0 - y1);
+    int32 sy = (y0 < y1) ? 1 : -1;
+    int32 err = dx + dy;
+
+    for (;;) {
+        draw_pixel(x0, y0, color);
+        if (x0 == x1 && y0 == y1) {
+            break;
+        }
+
+        int32 e2 = err << 1;
+        if (e2 >= dy) {
+            err += dy;
+            x0 += sx;
+        }
+        if (e2 <= dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
 void graphics_clear_screen(uint8 color) {
-    uint8 attr = make_color_attr(color, COLOR_BLACK);
-    
-    // Optimize by writing both character and attribute at once
-    volatile uint16 *video16 = (volatile uint16 *)VIDEO_MEMORY;
-    uint16 fill_value = (' ' | (attr << 8));
-    
-    for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
-        video16[i] = fill_value;
-    }
+    memset(g_backbuffer, color, sizeof(g_backbuffer));
 }
 
-// Clear a region of the screen - optimized
 void graphics_clear_region(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color) {
-    uint8 attr = make_color_attr(color, COLOR_BLACK);
-    uint16 fill_value = (' ' | (attr << 8));
-    
-    for (uint32 row = y; row < y + h && row < SCREEN_HEIGHT; row++) {
-        volatile uint16 *video16 = (volatile uint16 *)(VIDEO_MEMORY + (row * SCREEN_WIDTH + x) * 2);
-        uint32 count = (x + w <= SCREEN_WIDTH) ? w : (SCREEN_WIDTH - x);
-        
-        for (uint32 i = 0; i < count; i++) {
-            video16[i] = fill_value;
-        }
+    if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
+        return;
+    }
+
+    uint32 max_x = x + w;
+    uint32 max_y = y + h;
+    if (max_x > SCREEN_WIDTH) {
+        max_x = SCREEN_WIDTH;
+    }
+    if (max_y > SCREEN_HEIGHT) {
+        max_y = SCREEN_HEIGHT;
+    }
+
+    for (uint32 py = y; py < max_y; py++) {
+        uint32 offset = py * SCREEN_WIDTH + x;
+        memset(&g_backbuffer[offset], color, max_x - x);
     }
 }
 
-// Draw a filled rectangle
 void draw_filled_rect(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color) {
-    volatile char *video = VIDEO_MEMORY;
-    uint8 attr = make_color_attr(color, color);  // Same fg and bg for solid fill
-    
-    for (uint32 row = y; row < y + h && row < SCREEN_HEIGHT; row++) {
-        for (uint32 col = x; col < x + w && col < SCREEN_WIDTH; col++) {
-            int index = (row * SCREEN_WIDTH + col) * 2;
-            video[index] = ' ';
-            video[index + 1] = attr;
-        }
-    }
+    graphics_clear_region(x, y, w, h, color);
 }
 
-// Draw a rectangle outline with enhanced box-drawing characters
 void draw_rect(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color) {
-    volatile char *video = VIDEO_MEMORY;
-    uint8 attr = make_color_attr(color, COLOR_BLACK);
-    
-    // Validate minimum dimensions
     if (w < 2 || h < 2) {
         return;
     }
-    
-    // Use box-drawing characters for better visuals (CP437 character codes)
-    // 0xC4 (─) horizontal, 0xB3 (│) vertical
-    // 0xDA (┌) top-left, 0xBF (┐) top-right
-    // 0xC0 (└) bottom-left, 0xD9 (┘) bottom-right
-    
-    // Top and bottom borders
-    for (uint32 col = x + 1; col < x + w - 1 && col < SCREEN_WIDTH; col++) {
-        // Top
-        if (y < SCREEN_HEIGHT) {
-            int index = (y * SCREEN_WIDTH + col) * 2;
-            video[index] = 0xC4;  // ─
-            video[index + 1] = attr;
-        }
-        // Bottom
-        if (y + h - 1 < SCREEN_HEIGHT) {
-            int index = ((y + h - 1) * SCREEN_WIDTH + col) * 2;
-            video[index] = 0xC4;  // ─
-            video[index + 1] = attr;
-        }
+
+    for (uint32 px = x; px < x + w; px++) {
+        draw_pixel((int32)px, (int32)y, color);
+        draw_pixel((int32)px, (int32)(y + h - 1), color);
     }
-    
-    // Left and right borders
-    for (uint32 row = y + 1; row < y + h - 1 && row < SCREEN_HEIGHT; row++) {
-        // Left
-        if (x < SCREEN_WIDTH) {
-            int index = (row * SCREEN_WIDTH + x) * 2;
-            video[index] = 0xB3;  // │
-            video[index + 1] = attr;
-        }
-        // Right
-        if (x + w - 1 < SCREEN_WIDTH) {
-            int index = (row * SCREEN_WIDTH + x + w - 1) * 2;
-            video[index] = 0xB3;  // │
-            video[index + 1] = attr;
-        }
-    }
-    
-    // Corners with box-drawing characters
-    if (x < SCREEN_WIDTH && y < SCREEN_HEIGHT) {
-        int index = (y * SCREEN_WIDTH + x) * 2;
-        video[index] = 0xDA;  // ┌
-        video[index + 1] = attr;
-    }
-    if (x + w - 1 < SCREEN_WIDTH && y < SCREEN_HEIGHT) {
-        int index = (y * SCREEN_WIDTH + x + w - 1) * 2;
-        video[index] = 0xBF;  // ┐
-        video[index + 1] = attr;
-    }
-    if (x < SCREEN_WIDTH && y + h - 1 < SCREEN_HEIGHT) {
-        int index = ((y + h - 1) * SCREEN_WIDTH + x) * 2;
-        video[index] = 0xC0;  // └
-        video[index + 1] = attr;
-    }
-    if (x + w - 1 < SCREEN_WIDTH && y + h - 1 < SCREEN_HEIGHT) {
-        int index = ((y + h - 1) * SCREEN_WIDTH + x + w - 1) * 2;
-        video[index] = 0xD9;  // ┘
-        video[index + 1] = attr;
+
+    for (uint32 py = y; py < y + h; py++) {
+        draw_pixel((int32)x, (int32)py, color);
+        draw_pixel((int32)(x + w - 1), (int32)py, color);
     }
 }
 
-// Draw a single character
 void draw_char(uint32 x, uint32 y, char ch, uint8 color) {
-    if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
-        return;
+    const uint8* glyph = glyph_for_char(ch);
+
+    for (uint32 col = 0; col < FONT_WIDTH; col++) {
+        uint8 column_bits = glyph[col];
+        for (uint32 row = 0; row < FONT_HEIGHT; row++) {
+            if (column_bits & (1 << row)) {
+                draw_pixel((int32)(x + col), (int32)(y + row), color);
+            }
+        }
     }
-    
-    volatile char *video = VIDEO_MEMORY;
-    uint8 attr = make_color_attr(color, COLOR_BLACK);
-    int index = (y * SCREEN_WIDTH + x) * 2;
-    
-    video[index] = ch;
-    video[index + 1] = attr;
 }
 
-// Draw text string
+void draw_text_scaled(uint32 x, uint32 y, const char* text, uint8 color, uint32 scale) {
+    if (!text || scale == 0) {
+        return;
+    }
+
+    uint32 cursor_x = x;
+    while (*text) {
+        const uint8* glyph = glyph_for_char(*text++);
+        for (uint32 col = 0; col < FONT_WIDTH; col++) {
+            uint8 column_bits = glyph[col];
+            for (uint32 row = 0; row < FONT_HEIGHT; row++) {
+                if (column_bits & (1 << row)) {
+                    for (uint32 sx = 0; sx < scale; sx++) {
+                        for (uint32 sy = 0; sy < scale; sy++) {
+                            draw_pixel((int32)(cursor_x + col * scale + sx), (int32)(y + row * scale + sy), color);
+                        }
+                    }
+                }
+            }
+        }
+        cursor_x += (FONT_WIDTH + FONT_SPACING) * scale;
+    }
+}
+
 void draw_text(uint32 x, uint32 y, const char* text, uint8 color) {
-    if (!text || y >= SCREEN_HEIGHT) {
+    if (!text) {
         return;
     }
-    
-    volatile char *video = VIDEO_MEMORY;
-    uint8 attr = make_color_attr(color, COLOR_BLACK);
-    uint32 col = x;
-    
-    while (*text && col < SCREEN_WIDTH) {
-        int index = (y * SCREEN_WIDTH + col) * 2;
-        video[index] = *text;
-        video[index + 1] = attr;
-        text++;
-        col++;
+
+    uint32 cursor_x = x;
+    while (*text) {
+        draw_char(cursor_x, y, *text++, color);
+        cursor_x += FONT_WIDTH + FONT_SPACING;
     }
 }
 
-// Draw cursor at position with enhanced visibility
-void draw_cursor(uint32 x, uint32 y, uint8 visible) {
-    if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
-        return;
-    }
-    
-    volatile char *video = VIDEO_MEMORY;
-    int index = (y * SCREEN_WIDTH + x) * 2;
-    
-    if (visible) {
-        // Enhanced cursor: use CP437 block character 0xDB (█) for better visibility
-        video[index] = 0xDB;  // CP437 full block
-        video[index + 1] = make_color_attr(COLOR_WHITE, COLOR_BLACK);
-    } else {
-        // Clear cursor
-        video[index] = ' ';
-        video[index + 1] = make_color_attr(COLOR_WHITE, COLOR_BLACK);
-    }
-}
-
-// Draw text with custom foreground and background colors
-void draw_text_with_bg(uint32 x, uint32 y, const char* text, uint8 fg_color, uint8 bg_color) {
-    if (!text || y >= SCREEN_HEIGHT) {
-        return;
-    }
-    
-    volatile char *video = VIDEO_MEMORY;
-    uint8 attr = make_color_attr(fg_color, bg_color);
-    uint32 col = x;
-    
-    while (*text && col < SCREEN_WIDTH) {
-        int index = (y * SCREEN_WIDTH + col) * 2;
-        video[index] = *text;
-        video[index + 1] = attr;
-        text++;
-        col++;
-    }
-}
-
-// Draw a single character with custom foreground and background colors
 void draw_char_with_bg(uint32 x, uint32 y, char ch, uint8 fg_color, uint8 bg_color) {
-    if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
-        return;
-    }
-    
-    volatile char *video = VIDEO_MEMORY;
-    uint8 attr = make_color_attr(fg_color, bg_color);
-    int index = (y * SCREEN_WIDTH + x) * 2;
-    
-    video[index] = ch;
-    video[index + 1] = attr;
+    draw_filled_rect(x, y, FONT_WIDTH, FONT_HEIGHT, bg_color);
+    draw_char(x, y, ch, fg_color);
 }
 
-// Draw a box with shadow effect for depth perception
+void draw_text_with_bg(uint32 x, uint32 y, const char* text, uint8 fg_color, uint8 bg_color) {
+    if (!text) {
+        return;
+    }
+
+    uint32 cursor_x = x;
+    while (*text) {
+        draw_char_with_bg(cursor_x, y, *text++, fg_color, bg_color);
+        cursor_x += FONT_WIDTH + FONT_SPACING;
+    }
+}
+
 void draw_shadow_box(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color) {
-    // Draw main box
+    draw_filled_rect(x + 4, y + 4, w, h, COLOR_DARK_GRAY);
+    draw_filled_rect(x, y, w, h, COLOR_LIGHT_GRAY);
     draw_rect(x, y, w, h, color);
-    
-    // Draw shadow on right and bottom edges (if within bounds)
-    volatile char *video = VIDEO_MEMORY;
-    uint8 shadow_attr = make_color_attr(COLOR_DARK_GRAY, COLOR_BLACK);
-    
-    // Right shadow using CP437 light shade character 0xB0 (░)
-    for (uint32 row = y + 1; row <= y + h && row < SCREEN_HEIGHT; row++) {
-        if (x + w < SCREEN_WIDTH) {
-            int index = (row * SCREEN_WIDTH + x + w) * 2;
-            video[index] = 0xB0;  // CP437 light shade
-            video[index + 1] = shadow_attr;
-        }
-    }
-    
-    // Bottom shadow using CP437 light shade character 0xB0 (░)
-    for (uint32 col = x + 1; col <= x + w && col < SCREEN_WIDTH; col++) {
-        if (y + h < SCREEN_HEIGHT) {
-            int index = ((y + h) * SCREEN_WIDTH + col) * 2;
-            video[index] = 0xB0;  // CP437 light shade
-            video[index + 1] = shadow_attr;
-        }
-    }
+    draw_filled_rect(x, y, w, TITLE_BAR_HEIGHT, color);
 }
 
-// Draw a progress bar with percentage
 void draw_progress_bar(uint32 x, uint32 y, uint32 w, uint32 percent, uint8 color) {
-    if (y >= SCREEN_HEIGHT || w < 2) {
+    if (w < 4) {
         return;
     }
-    
-    // Clamp percentage to 0-100
+
     if (percent > 100) {
         percent = 100;
     }
-    
-    volatile char *video = VIDEO_MEMORY;
-    uint8 bar_attr = make_color_attr(color, COLOR_BLACK);
-    uint8 empty_attr = make_color_attr(COLOR_DARK_GRAY, COLOR_BLACK);
-    
-    // Calculate filled width
-    uint32 filled = (w * percent) / 100;
-    
-    // Draw filled portion with CP437 solid blocks 0xDB (█)
-    for (uint32 col = x; col < x + filled && col < SCREEN_WIDTH; col++) {
-        int index = (y * SCREEN_WIDTH + col) * 2;
-        video[index] = 0xDB;  // CP437 full block
-        video[index + 1] = bar_attr;
+
+    draw_rect(x, y, w, 10, COLOR_WHITE);
+    draw_filled_rect(x + 1, y + 1, w - 2, 8, COLOR_DARK_GRAY);
+    draw_filled_rect(x + 1, y + 1, ((w - 2) * percent) / 100, 8, color);
+}
+
+void draw_cursor(uint32 x, uint32 y, uint8 visible) {
+    if (!visible) {
+        return;
     }
-    
-    // Draw empty portion with CP437 light blocks 0xB0 (░)
-    for (uint32 col = x + filled; col < x + w && col < SCREEN_WIDTH; col++) {
-        int index = (y * SCREEN_WIDTH + col) * 2;
-        video[index] = 0xB0;  // CP437 light shade
-        video[index + 1] = empty_attr;
-    }
+
+    draw_line((int32)x, (int32)y, (int32)x, (int32)(y + 12), COLOR_WHITE);
+    draw_line((int32)x, (int32)y, (int32)(x + 8), (int32)(y + 8), COLOR_WHITE);
+    draw_line((int32)(x + 2), (int32)(y + 10), (int32)(x + 6), (int32)(y + 14), COLOR_WHITE);
+    draw_line((int32)(x + 5), (int32)(y + 8), (int32)(x + 9), (int32)(y + 12), COLOR_WHITE);
 }

@@ -37,6 +37,7 @@ void ux_handle_hotkey(char key) {
     // Keep Alt+Q as a global shell action placeholder until a power menu exists.
     if (key == 'q' || key == 'Q') {
         graphics_clear_screen(COLOR_BLACK);
-        draw_text(29, 12, "Desktop session paused", COLOR_YELLOW);
+        draw_text_scaled(54, 86, "Desktop paused", COLOR_YELLOW, 2);
+        graphics_present();
     }
 }
