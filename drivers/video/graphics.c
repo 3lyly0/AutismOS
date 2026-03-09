@@ -116,7 +116,7 @@ void graphics_init(void) {
     graphics_present();
 }
 
-void draw_pixel(int32 x, int32 y, uint8 color) {
+void draw_pixel(sint32 x, sint32 y, uint8 color) {
     if (x < 0 || y < 0 || x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
         return;
     }
@@ -124,12 +124,12 @@ void draw_pixel(int32 x, int32 y, uint8 color) {
     g_backbuffer[y * SCREEN_WIDTH + x] = color;
 }
 
-void draw_line(int32 x0, int32 y0, int32 x1, int32 y1, uint8 color) {
-    int32 dx = (x1 > x0) ? (x1 - x0) : (x0 - x1);
-    int32 sx = (x0 < x1) ? 1 : -1;
-    int32 dy = (y1 > y0) ? -(y1 - y0) : -(y0 - y1);
-    int32 sy = (y0 < y1) ? 1 : -1;
-    int32 err = dx + dy;
+void draw_line(sint32 x0, sint32 y0, sint32 x1, sint32 y1, uint8 color) {
+    sint32 dx = (x1 > x0) ? (x1 - x0) : (x0 - x1);
+    sint32 sx = (x0 < x1) ? 1 : -1;
+    sint32 dy = (y1 > y0) ? -(y1 - y0) : -(y0 - y1);
+    sint32 sy = (y0 < y1) ? 1 : -1;
+    sint32 err = dx + dy;
 
     for (;;) {
         draw_pixel(x0, y0, color);
@@ -137,7 +137,7 @@ void draw_line(int32 x0, int32 y0, int32 x1, int32 y1, uint8 color) {
             break;
         }
 
-        int32 e2 = err << 1;
+        sint32 e2 = err << 1;
         if (e2 >= dy) {
             err += dy;
             x0 += sx;
