@@ -26,13 +26,15 @@ typedef enum {
     DESKTOP_HIT_CLIENT = 1,
     DESKTOP_HIT_TITLEBAR = 2,
     DESKTOP_HIT_CLOSE = 3,
-    DESKTOP_HIT_RESIZE = 4
+    DESKTOP_HIT_MAXIMIZE = 4,
+    DESKTOP_HIT_RESIZE = 5
 } desktop_hit_region_t;
 
 #define WINDOW_FLAG_VISIBLE    0x01
 #define WINDOW_FLAG_FOCUSED    0x02
 #define WINDOW_FLAG_DRAGGABLE  0x04
 #define WINDOW_FLAG_RESIZABLE  0x08
+#define WINDOW_FLAG_MAXIMIZED  0x10
 
 // Forward declaration for window structure
 typedef struct window_s window_t;
@@ -50,6 +52,10 @@ struct window_s {
     uint32 flags;
     uint32 min_width;
     uint32 min_height;
+    uint32 restore_x;
+    uint32 restore_y;
+    uint32 restore_width;
+    uint32 restore_height;
     void (*draw_content)(window_t* w);
     void (*handle_key)(window_t* w, char key);
     void (*handle_mouse)(window_t* w, sint32 local_x, sint32 local_y, uint8 buttons);
@@ -111,6 +117,7 @@ window_t* desktop_get_focused(void);
 void desktop_focus_window(uint32 window_id);
 void desktop_move_window(window_t* w, sint32 x, sint32 y);
 void desktop_resize_window(window_t* w, uint32 width, uint32 height);
+void desktop_toggle_maximize(window_t* w);
 void desktop_get_window_content_rect(const window_t* w, rect_t* rect);
 desktop_hit_region_t desktop_hit_test_window(const window_t* w, sint32 x, sint32 y);
 
