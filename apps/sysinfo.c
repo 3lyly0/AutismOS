@@ -50,25 +50,26 @@ static sysinfo_state_t* get_state(window_t* win) {
 
 void sysinfo_draw(window_t* win) {
     sysinfo_state_t* state = get_state(win);
+    rect_t content;
     if (!win || !state) {
         return;
     }
 
     char num[16];
-    draw_filled_rect(win->x + 2, win->y + 20, win->width - 4, win->height - 22, COLOR_WHITE);
+    desktop_get_window_content_rect(win, &content);
 
-    draw_text(win->x + 12, win->y + 32, "AutismOS build", COLOR_BLACK);
-    draw_text(win->x + 12, win->y + 48, "Display: VGA 320x200", COLOR_BLACK);
-    draw_text(win->x + 12, win->y + 64, "Desktop: Pixel GUI", COLOR_BLACK);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 8, "AutismOS build", COLOR_BLACK);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 24, "Display: VGA 320x200", COLOR_BLACK);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 40, "Desktop: Pixel GUI", COLOR_BLACK);
 
-    draw_text(win->x + 12, win->y + 88, "Ticks:", COLOR_BLACK);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 64, "Ticks:", COLOR_BLACK);
     uint_to_str((uint32)g_timer_ticks, num);
-    draw_text(win->x + 56, win->y + 88, num, COLOR_BLUE);
+    draw_text((uint32)content.x + 48, (uint32)content.y + 64, num, COLOR_BLUE);
 
-    draw_text(win->x + 12, win->y + 104, "Status:", COLOR_BLACK);
-    draw_text(win->x + 56, win->y + 104, "Running", COLOR_GREEN);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 80, "Status:", COLOR_BLACK);
+    draw_text((uint32)content.x + 48, (uint32)content.y + 80, "Running", COLOR_GREEN);
 
-    draw_text(win->x + 12, win->y + 126, "R refreshes", COLOR_DARK_GRAY);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 102, "R refreshes", COLOR_DARK_GRAY);
     state->update_counter++;
 }
 
@@ -84,6 +85,8 @@ window_t* sysinfo_create(void) {
         return NULL;
     }
 
+    win->min_width = 180;
+    win->min_height = 120;
     win->draw_content = sysinfo_draw;
     win->handle_key = sysinfo_handle_key;
     get_state(win);

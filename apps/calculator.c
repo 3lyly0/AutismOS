@@ -76,18 +76,20 @@ static sint32 parse_display(const char* display) {
 
 void calculator_draw(window_t* win) {
     calc_state_t* state = get_calc_state(win);
+    rect_t content;
     if (!win || !state) {
         return;
     }
 
-    draw_filled_rect(win->x + 2, win->y + 20, win->width - 4, win->height - 22, COLOR_WHITE);
-    draw_filled_rect(win->x + 12, win->y + 30, win->width - 24, 26, COLOR_BLACK);
-    draw_rect(win->x + 12, win->y + 30, win->width - 24, 26, COLOR_LIGHT_CYAN);
-    draw_text(win->x + 18, win->y + 39, state->display, COLOR_LIGHT_GREEN);
+    desktop_get_window_content_rect(win, &content);
 
-    draw_text(win->x + 14, win->y + 68, "Keys 0-9 and +-*/", COLOR_BLACK);
-    draw_text(win->x + 14, win->y + 82, "Enter or = to solve", COLOR_BLACK);
-    draw_text(win->x + 14, win->y + 96, "C clears", COLOR_BLACK);
+    draw_filled_rect((uint32)content.x + 4, (uint32)content.y + 8, (uint32)content.width - 8, 26, COLOR_BLACK);
+    draw_rect((uint32)content.x + 4, (uint32)content.y + 8, (uint32)content.width - 8, 26, COLOR_LIGHT_CYAN);
+    draw_text((uint32)content.x + 10, (uint32)content.y + 17, state->display, COLOR_LIGHT_GREEN);
+
+    draw_text((uint32)content.x + 6, (uint32)content.y + 46, "Keys 0-9 and +-*/", COLOR_BLACK);
+    draw_text((uint32)content.x + 6, (uint32)content.y + 60, "Enter or = to solve", COLOR_BLACK);
+    draw_text((uint32)content.x + 6, (uint32)content.y + 74, "C clears", COLOR_BLACK);
 }
 
 void calculator_handle_key(window_t* win, char key) {
@@ -150,6 +152,8 @@ window_t* calculator_create(void) {
         return NULL;
     }
 
+    win->min_width = 150;
+    win->min_height = 110;
     win->draw_content = calculator_draw;
     win->handle_key = calculator_handle_key;
     get_calc_state(win);
