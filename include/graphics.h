@@ -3,9 +3,7 @@
 
 #include "types.h"
 
-// Graphics primitives for Step 9 interactive UI
-
-// Color definitions (RGB format for VGA text mode attributes)
+// Color definitions mapped to the standard VGA 256-color palette.
 #define COLOR_BLACK         0x00
 #define COLOR_BLUE          0x01
 #define COLOR_GREEN         0x02
@@ -23,17 +21,22 @@
 #define COLOR_YELLOW        0x0E
 #define COLOR_WHITE         0x0F
 
-// Initialize graphics subsystem
 void graphics_init(void);
+uint8 graphics_is_initialized(void);
+void graphics_present(void);
+
+// Low-level pixel primitives
+void draw_pixel(int32 x, int32 y, uint8 color);
+void draw_line(int32 x0, int32 y0, int32 x1, int32 y1, uint8 color);
 
 // Drawing primitives
 void draw_rect(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color);
 void draw_filled_rect(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color);
 void draw_text(uint32 x, uint32 y, const char* text, uint8 color);
+void draw_text_scaled(uint32 x, uint32 y, const char* text, uint8 color, uint32 scale);
 void draw_char(uint32 x, uint32 y, char ch, uint8 color);
 void draw_cursor(uint32 x, uint32 y, uint8 visible);
 
-// Enhanced drawing functions
 void draw_text_with_bg(uint32 x, uint32 y, const char* text, uint8 fg_color, uint8 bg_color);
 void draw_char_with_bg(uint32 x, uint32 y, char ch, uint8 fg_color, uint8 bg_color);
 void draw_shadow_box(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color);
