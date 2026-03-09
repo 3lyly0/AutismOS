@@ -46,9 +46,9 @@ static unsigned char mouse_read() {
 
 void mouse_handler(REGISTERS *r __attribute__((unused))) {
     static uint8 mouse_cycle = 0;
-    static int8 mouse_packet[3];
+    static sint8 mouse_packet[3];
 
-    int8 data = (int8)inportb(0x60);
+    sint8 data = (sint8)inportb(0x60);
     mouse_packet[mouse_cycle++] = data;
 
     if (mouse_cycle < 3) {
