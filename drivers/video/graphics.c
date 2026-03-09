@@ -183,13 +183,13 @@ void draw_rect(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color) {
     }
 
     for (uint32 px = x; px < x + w; px++) {
-        draw_pixel((int32)px, (int32)y, color);
-        draw_pixel((int32)px, (int32)(y + h - 1), color);
+        draw_pixel((sint32)px, (sint32)y, color);
+        draw_pixel((sint32)px, (sint32)(y + h - 1), color);
     }
 
     for (uint32 py = y; py < y + h; py++) {
-        draw_pixel((int32)x, (int32)py, color);
-        draw_pixel((int32)(x + w - 1), (int32)py, color);
+        draw_pixel((sint32)x, (sint32)py, color);
+        draw_pixel((sint32)(x + w - 1), (sint32)py, color);
     }
 }
 
@@ -200,7 +200,7 @@ void draw_char(uint32 x, uint32 y, char ch, uint8 color) {
         uint8 column_bits = glyph[col];
         for (uint32 row = 0; row < FONT_HEIGHT; row++) {
             if (column_bits & (1 << row)) {
-                draw_pixel((int32)(x + col), (int32)(y + row), color);
+                draw_pixel((sint32)(x + col), (sint32)(y + row), color);
             }
         }
     }
@@ -220,7 +220,7 @@ void draw_text_scaled(uint32 x, uint32 y, const char* text, uint8 color, uint32 
                 if (column_bits & (1 << row)) {
                     for (uint32 sx = 0; sx < scale; sx++) {
                         for (uint32 sy = 0; sy < scale; sy++) {
-                            draw_pixel((int32)(cursor_x + col * scale + sx), (int32)(y + row * scale + sy), color);
+                            draw_pixel((sint32)(cursor_x + col * scale + sx), (sint32)(y + row * scale + sy), color);
                         }
                     }
                 }
@@ -285,8 +285,8 @@ void draw_cursor(uint32 x, uint32 y, uint8 visible) {
         return;
     }
 
-    draw_line((int32)x, (int32)y, (int32)x, (int32)(y + 12), COLOR_WHITE);
-    draw_line((int32)x, (int32)y, (int32)(x + 8), (int32)(y + 8), COLOR_WHITE);
-    draw_line((int32)(x + 2), (int32)(y + 10), (int32)(x + 6), (int32)(y + 14), COLOR_WHITE);
-    draw_line((int32)(x + 5), (int32)(y + 8), (int32)(x + 9), (int32)(y + 12), COLOR_WHITE);
+    draw_line((sint32)x, (sint32)y, (sint32)x, (sint32)(y + 12), COLOR_WHITE);
+    draw_line((sint32)x, (sint32)y, (sint32)(x + 8), (sint32)(y + 8), COLOR_WHITE);
+    draw_line((sint32)(x + 2), (sint32)(y + 10), (sint32)(x + 6), (sint32)(y + 14), COLOR_WHITE);
+    draw_line((sint32)(x + 5), (sint32)(y + 8), (sint32)(x + 9), (sint32)(y + 12), COLOR_WHITE);
 }
