@@ -80,13 +80,13 @@ void sysinfo_handle_key(window_t* win, char key) {
 }
 
 window_t* sysinfo_create(void) {
-    window_t* win = desktop_create_window("System Info", 54, 24, 200, 140);
+    window_t* win = desktop_create_window("System Info", 44, 18, 220, 146);
     if (!win) {
         return NULL;
     }
 
-    win->min_width = 180;
-    win->min_height = 120;
+    win->min_width = 190;
+    win->min_height = 126;
     win->draw_content = sysinfo_draw;
     win->handle_key = sysinfo_handle_key;
     get_state(win);

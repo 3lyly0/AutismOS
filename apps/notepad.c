@@ -118,13 +118,13 @@ void notepad_handle_key(window_t* win, char key) {
 }
 
 window_t* notepad_create(void) {
-    window_t* win = desktop_create_window("Notepad", 22, 14, 220, 150);
+    window_t* win = desktop_create_window("Notepad", 14, 10, 252, 164);
     if (!win) {
         return NULL;
     }
 
-    win->min_width = 160;
-    win->min_height = 100;
+    win->min_width = 190;
+    win->min_height = 120;
     win->draw_content = notepad_draw;
     win->handle_key = notepad_handle_key;
     get_notepad_state(win);
