@@ -8,9 +8,6 @@
 #include "ux.h"
 #include "desktop.h"
 
-// External function to check if desktop mode is active
-extern uint8 is_desktop_mode(void);
-
 static BOOL g_caps_lock = FALSE;
 static BOOL g_shift_pressed = FALSE;
 static BOOL g_alt_pressed = FALSE;
@@ -154,23 +151,12 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
                     return;
                 }
                 
-                // Handle Alt+Key combinations (Step 8: UX Hotkeys)
+                // Global hotkeys remain available regardless of the active shell.
                 if (g_alt_pressed && g_ch != 0) {
                     ux_handle_hotkey(g_ch);
                 }
-                // Send to desktop if active
                 else if (is_desktop_mode() && g_ch != 0) {
                     desktop_handle_key(g_ch);
-                }
-                // Step 9: Route input to UX for UI handling
-                else if (g_ch != 0) {
-                    // Handle Enter key specially
-                    if (g_ch == '\n') {
-                        ux_handle_enter_key();
-                    } else {
-                        // Regular character input
-                        ux_handle_key_input(g_ch);
-                    }
                 }
                 break;
         }
