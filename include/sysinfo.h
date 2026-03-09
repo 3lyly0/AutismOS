@@ -11,5 +11,6 @@ typedef struct {
 window_t* sysinfo_create(void);
 void sysinfo_draw(window_t* win);
 void sysinfo_handle_key(window_t* win, char key);
+void sysinfo_handle_mouse(window_t* win, sint32 local_x, sint32 local_y, uint8 buttons);
 
 #endif

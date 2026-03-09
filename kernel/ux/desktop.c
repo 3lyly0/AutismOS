@@ -7,6 +7,7 @@
 #include "sysinfo.h"
 
 #define DESKTOP_BG_TOP COLOR_BLUE
+#define DESKTOP_BG_MID COLOR_LIGHT_BLUE
 #define DESKTOP_BG_BOTTOM COLOR_CYAN
 #define TASKBAR_HEIGHT 20
 #define START_X 8
@@ -14,11 +15,14 @@
 #define START_W 58
 #define START_H 14
 #define START_MENU_X 8
-#define START_MENU_Y (SCREEN_HEIGHT - TASKBAR_HEIGHT - 76)
-#define START_MENU_W 132
-#define START_MENU_H 72
+#define START_MENU_Y (SCREEN_HEIGHT - TASKBAR_HEIGHT - 88)
+#define START_MENU_W 154
+#define START_MENU_H 84
 #define WINDOW_MIN_WIDTH 96
 #define WINDOW_MIN_HEIGHT 72
+#define TASKBAR_BUTTON_X 74
+#define TASKBAR_BUTTON_W 68
+#define TASKBAR_BUTTON_SPACING 6
 
 static const desktop_chrome_t g_chrome = {
     18, /* titlebar_height */
@@ -69,18 +73,63 @@ static void desktop_bring_to_front(uint32 index) {
     g_desktop.windows[g_desktop.window_count - 1] = moved;
 }
 
-static void desktop_draw_background(void) {
+static void desktop_draw_wallpaper(void) {
     for (sint32 y = 0; y < SCREEN_HEIGHT - TASKBAR_HEIGHT; y++) {
-        uint8 color = (y < (SCREEN_HEIGHT - TASKBAR_HEIGHT) / 2) ? DESKTOP_BG_TOP : DESKTOP_BG_BOTTOM;
+        uint8 color = DESKTOP_BG_TOP;
+        if (y > 46 && y < 108) {
+            color = DESKTOP_BG_MID;
+        } else if (y >= 108) {
+            color = DESKTOP_BG_BOTTOM;
+        }
         draw_line(0, y, SCREEN_WIDTH - 1, y, color);
     }
 
+    for (sint32 y = 10; y < SCREEN_HEIGHT - TASKBAR_HEIGHT; y += 18) {
+        for (sint32 x = 8; x < SCREEN_WIDTH; x += 22) {
+            draw_pixel(x, y, COLOR_WHITE);
+            draw_pixel(x + 1, y + 1, COLOR_LIGHT_CYAN);
+        }
+    }
+
+    draw_filled_rect(192, 18, 100, 54, COLOR_LIGHT_CYAN);
+    draw_rect(192, 18, 100, 54, COLOR_WHITE);
+    draw_text(204, 30, "AutismOS", COLOR_BLUE);
+    draw_text(204, 44, "Pixel desktop", COLOR_BLUE);
+}
+
+static void desktop_draw_taskbar_windows(void) {
+    sint32 x = TASKBAR_BUTTON_X;
+
+    for (uint32 i = 0; i < g_desktop.window_count && x + TASKBAR_BUTTON_W < SCREEN_WIDTH - 8; i++) {
+        window_t* w = &g_desktop.windows[i];
+        uint8 fill = w->focused ? COLOR_LIGHT_CYAN : COLOR_LIGHT_GRAY;
+        uint8 text = w->focused ? COLOR_BLUE : COLOR_BLACK;
+
+        draw_filled_rect((uint32)x, SCREEN_HEIGHT - TASKBAR_HEIGHT + 2, TASKBAR_BUTTON_W, 15, fill);
+        draw_rect((uint32)x, SCREEN_HEIGHT - TASKBAR_HEIGHT + 2, TASKBAR_BUTTON_W, 15, COLOR_WHITE);
+        draw_text((uint32)x + 4, SCREEN_HEIGHT - TASKBAR_HEIGHT + 6, w->title, text);
+        x += TASKBAR_BUTTON_W + TASKBAR_BUTTON_SPACING;
+    }
+}
+
+static void desktop_draw_background(void) {
+    desktop_draw_wallpaper();
+
     draw_filled_rect(0, SCREEN_HEIGHT - TASKBAR_HEIGHT, SCREEN_WIDTH, TASKBAR_HEIGHT, COLOR_DARK_GRAY);
     draw_line(0, SCREEN_HEIGHT - TASKBAR_HEIGHT, SCREEN_WIDTH - 1, SCREEN_HEIGHT - TASKBAR_HEIGHT, COLOR_WHITE);
+
     draw_filled_rect(START_X, START_Y, START_W, START_H, g_desktop.start_menu_open ? COLOR_LIGHT_CYAN : COLOR_LIGHT_GRAY);
     draw_rect(START_X, START_Y, START_W, START_H, COLOR_WHITE);
     draw_text(START_X + 10, START_Y + 4, "AutismOS", COLOR_BLACK);
-    draw_text(208, SCREEN_HEIGHT - 13, "desktop shell", COLOR_WHITE);
+    desktop_draw_taskbar_windows();
+    draw_text(248, SCREEN_HEIGHT - 13, "GUI shell", COLOR_WHITE);
+}
+
+static void desktop_draw_menu_tile(sint32 x, sint32 y, uint8 color, const char* title, const char* hint) {
+    draw_filled_rect((uint32)x, (uint32)y, 134, 18, color);
+    draw_rect((uint32)x, (uint32)y, 134, 18, COLOR_WHITE);
+    draw_text((uint32)x + 6, (uint32)y + 4, title, COLOR_WHITE);
+    draw_text((uint32)x + 72, (uint32)y + 4, hint, COLOR_LIGHT_GRAY);
 }
 
 static void desktop_draw_menu(void) {
@@ -90,12 +139,12 @@ static void desktop_draw_menu(void) {
 
     draw_filled_rect(START_MENU_X, START_MENU_Y, START_MENU_W, START_MENU_H, COLOR_LIGHT_GRAY);
     draw_rect(START_MENU_X, START_MENU_Y, START_MENU_W, START_MENU_H, COLOR_WHITE);
-    draw_filled_rect(START_MENU_X, START_MENU_Y, START_MENU_W, 16, COLOR_BLUE);
-    draw_text(START_MENU_X + 6, START_MENU_Y + 5, "Launch", COLOR_WHITE);
+    draw_filled_rect(START_MENU_X, START_MENU_Y, START_MENU_W, 18, COLOR_BLUE);
+    draw_text(START_MENU_X + 8, START_MENU_Y + 6, "Launch apps", COLOR_WHITE);
 
-    draw_text(START_MENU_X + 10, START_MENU_Y + 24, "1  Notepad", COLOR_BLACK);
-    draw_text(START_MENU_X + 10, START_MENU_Y + 38, "2  Calculator", COLOR_BLACK);
-    draw_text(START_MENU_X + 10, START_MENU_Y + 52, "3  System info", COLOR_BLACK);
+    desktop_draw_menu_tile(START_MENU_X + 10, START_MENU_Y + 24, COLOR_BLUE, "Notepad", "press 1");
+    desktop_draw_menu_tile(START_MENU_X + 10, START_MENU_Y + 45, COLOR_GREEN, "Calculator", "press 2");
+    desktop_draw_menu_tile(START_MENU_X + 10, START_MENU_Y + 66, COLOR_CYAN, "System Info", "press 3");
 }
 
 static void desktop_draw_resize_grip(const window_t* w) {
@@ -105,6 +154,15 @@ static void desktop_draw_resize_grip(const window_t* w) {
     for (sint32 i = 0; i < 4; i++) {
         draw_line(grip_x + i * 3, grip_y + g_chrome.resize_grip_size - 1, grip_x + g_chrome.resize_grip_size - 1, grip_y + i * 3, COLOR_DARK_GRAY);
     }
+}
+
+static void desktop_draw_maximize_button(const window_t* w) {
+    uint32 x = w->x + w->width - g_chrome.close_button_size - 22;
+    uint8 fill = (w->flags & WINDOW_FLAG_MAXIMIZED) ? COLOR_LIGHT_GREEN : COLOR_LIGHT_GRAY;
+
+    draw_filled_rect(x, w->y + 3, g_chrome.close_button_size, g_chrome.close_button_size, fill);
+    draw_rect(x, w->y + 3, g_chrome.close_button_size, g_chrome.close_button_size, COLOR_WHITE);
+    draw_rect(x + 3, w->y + 6, g_chrome.close_button_size - 6, g_chrome.close_button_size - 6, COLOR_BLACK);
 }
 
 void desktop_init(void) {
@@ -141,7 +199,7 @@ void desktop_move_window(window_t* w, sint32 x, sint32 y) {
     rect_t workspace;
     desktop_get_workspace_rect(&workspace);
 
-    if (!w) {
+    if (!w || (w->flags & WINDOW_FLAG_MAXIMIZED)) {
         return;
     }
 
@@ -166,7 +224,7 @@ void desktop_resize_window(window_t* w, uint32 width, uint32 height) {
     rect_t workspace;
     desktop_get_workspace_rect(&workspace);
 
-    if (!w) {
+    if (!w || (w->flags & WINDOW_FLAG_MAXIMIZED)) {
         return;
     }
 
@@ -195,6 +253,33 @@ void desktop_resize_window(window_t* w, uint32 width, uint32 height) {
     w->height = height;
 }
 
+void desktop_toggle_maximize(window_t* w) {
+    rect_t workspace;
+    desktop_get_workspace_rect(&workspace);
+
+    if (!w) {
+        return;
+    }
+
+    if (w->flags & WINDOW_FLAG_MAXIMIZED) {
+        w->flags &= ~WINDOW_FLAG_MAXIMIZED;
+        w->x = w->restore_x;
+        w->y = w->restore_y;
+        w->width = w->restore_width;
+        w->height = w->restore_height;
+    } else {
+        w->restore_x = w->x;
+        w->restore_y = w->y;
+        w->restore_width = w->width;
+        w->restore_height = w->height;
+        w->flags |= WINDOW_FLAG_MAXIMIZED;
+        w->x = 6;
+        w->y = 6;
+        w->width = (uint32)(workspace.width - 12);
+        w->height = (uint32)(workspace.height - 12);
+    }
+}
+
 void desktop_get_window_content_rect(const window_t* w, rect_t* rect) {
     if (!w || !rect) {
         return;
@@ -214,6 +299,11 @@ desktop_hit_region_t desktop_hit_test_window(const window_t* w, sint32 x, sint32
     if (point_in_rect(x, y, (sint32)(w->x + w->width - g_chrome.close_button_size - 6), (sint32)(w->y + 3),
         (sint32)g_chrome.close_button_size, (sint32)g_chrome.close_button_size)) {
         return DESKTOP_HIT_CLOSE;
+    }
+
+    if (point_in_rect(x, y, (sint32)(w->x + w->width - g_chrome.close_button_size - 22), (sint32)(w->y + 3),
+        (sint32)g_chrome.close_button_size, (sint32)g_chrome.close_button_size)) {
+        return DESKTOP_HIT_MAXIMIZE;
     }
 
     if ((w->flags & WINDOW_FLAG_RESIZABLE) &&
@@ -328,8 +418,10 @@ void desktop_draw_window(window_t* w) {
     draw_filled_rect(w->x, w->y, w->width, w->height, COLOR_LIGHT_GRAY);
     draw_rect(w->x, w->y, w->width, w->height, w->border_color);
     draw_filled_rect(w->x, w->y, w->width, g_chrome.titlebar_height, w->focused ? COLOR_BLUE : COLOR_DARK_GRAY);
+    draw_line((sint32)w->x, (sint32)(w->y + g_chrome.titlebar_height), (sint32)(w->x + w->width - 1), (sint32)(w->y + g_chrome.titlebar_height), COLOR_WHITE);
 
     draw_text(w->x + 6, w->y + 5, w->title, w->title_color);
+    desktop_draw_maximize_button(w);
 
     draw_filled_rect(w->x + w->width - g_chrome.close_button_size - 6, w->y + 3, g_chrome.close_button_size, g_chrome.close_button_size, COLOR_RED);
     draw_rect(w->x + w->width - g_chrome.close_button_size - 6, w->y + 3, g_chrome.close_button_size, g_chrome.close_button_size, COLOR_WHITE);
@@ -401,16 +493,34 @@ static void desktop_handle_menu_click(sint32 x, sint32 y) {
         return;
     }
 
-    if (point_in_rect(x, y, START_MENU_X, START_MENU_Y + 18, START_MENU_W, 18)) {
+    if (point_in_rect(x, y, START_MENU_X + 10, START_MENU_Y + 24, 134, 18)) {
         notepad_create();
-    } else if (point_in_rect(x, y, START_MENU_X, START_MENU_Y + 32, START_MENU_W, 18)) {
+    } else if (point_in_rect(x, y, START_MENU_X + 10, START_MENU_Y + 45, 134, 18)) {
         calculator_create();
-    } else if (point_in_rect(x, y, START_MENU_X, START_MENU_Y + 46, START_MENU_W, 18)) {
+    } else if (point_in_rect(x, y, START_MENU_X + 10, START_MENU_Y + 66, 134, 18)) {
         sysinfo_create();
     }
 
     g_desktop.start_menu_open = 0;
     desktop_set_dirty();
+}
+
+static int desktop_handle_taskbar_click(sint32 x, sint32 y) {
+    sint32 button_x = TASKBAR_BUTTON_X;
+
+    if (!point_in_rect(x, y, 0, SCREEN_HEIGHT - TASKBAR_HEIGHT, SCREEN_WIDTH, TASKBAR_HEIGHT)) {
+        return 0;
+    }
+
+    for (uint32 i = 0; i < g_desktop.window_count; i++) {
+        if (point_in_rect(x, y, button_x, SCREEN_HEIGHT - TASKBAR_HEIGHT + 2, TASKBAR_BUTTON_W, 15)) {
+            desktop_focus_window(g_desktop.windows[i].id);
+            return 1;
+        }
+        button_x += TASKBAR_BUTTON_W + TASKBAR_BUTTON_SPACING;
+    }
+
+    return 0;
 }
 
 static void desktop_begin_window_interaction(window_t* w, desktop_hit_region_t hit, sint32 x, sint32 y) {
@@ -468,6 +578,11 @@ void desktop_handle_mouse(int x, int y, uint8 buttons) {
             return;
         }
 
+        if (desktop_handle_taskbar_click((sint32)x, (sint32)y)) {
+            last_buttons = buttons;
+            return;
+        }
+
         for (sint32 i = (sint32)g_desktop.window_count - 1; i >= 0; i--) {
             window_t* w = &g_desktop.windows[i];
             desktop_hit_region_t hit = desktop_hit_test_window(w, (sint32)x, (sint32)y);
@@ -483,6 +598,14 @@ void desktop_handle_mouse(int x, int y, uint8 buttons) {
 
             desktop_focus_window(w->id);
             w = desktop_get_focused();
+
+            if (hit == DESKTOP_HIT_MAXIMIZE) {
+                desktop_toggle_maximize(w);
+                desktop_set_dirty();
+                last_buttons = buttons;
+                return;
+            }
+
             desktop_begin_window_interaction(w, hit, (sint32)x, (sint32)y);
 
             if (hit == DESKTOP_HIT_CLIENT && w && w->handle_mouse) {
