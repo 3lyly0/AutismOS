@@ -26,8 +26,8 @@ uint8 graphics_is_initialized(void);
 void graphics_present(void);
 
 // Low-level pixel primitives
-void draw_pixel(int32 x, int32 y, uint8 color);
-void draw_line(int32 x0, int32 y0, int32 x1, int32 y1, uint8 color);
+void draw_pixel(sint32 x, sint32 y, uint8 color);
+void draw_line(sint32 x0, sint32 y0, sint32 x1, sint32 y1, uint8 color);
 
 // Drawing primitives
 void draw_rect(uint32 x, uint32 y, uint32 w, uint32 h, uint8 color);
