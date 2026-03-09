@@ -31,19 +31,23 @@ static notepad_state_t* get_notepad_state(window_t* win) {
 
 void notepad_draw(window_t* win) {
     notepad_state_t* state = get_notepad_state(win);
+    rect_t content;
+    const desktop_chrome_t* chrome = desktop_get_chrome();
     if (!win || !state) {
         return;
     }
 
-    uint32 content_x = win->x + CONTENT_PAD;
-    uint32 content_y = win->y + 26;
-    uint32 content_w = win->width - (CONTENT_PAD * 2);
-    uint32 content_h = win->height - 34;
+    desktop_get_window_content_rect(win, &content);
+
+    uint32 content_x = (uint32)content.x + CONTENT_PAD;
+    uint32 content_y = (uint32)content.y + 12;
+    uint32 content_w = (uint32)content.width - (CONTENT_PAD * 2);
+    uint32 content_h = (uint32)content.height - 18;
     uint32 cols = content_w / CHAR_W;
     uint32 rows = content_h / CHAR_H;
 
-    draw_filled_rect(win->x + 2, win->y + 20, win->width - 4, win->height - 22, COLOR_WHITE);
-    draw_text(content_x, win->y + 8, "Type here. Backspace works.", COLOR_WHITE);
+    draw_text(win->x + chrome->content_padding, win->y + 5, "Type here. Backspace works.", COLOR_WHITE);
+    draw_line(content.x, content.y + 8, content.x + content.width - 1, content.y + 8, COLOR_LIGHT_GRAY);
 
     uint32 row = 0;
     uint32 col = 0;
@@ -119,6 +123,8 @@ window_t* notepad_create(void) {
         return NULL;
     }
 
+    win->min_width = 160;
+    win->min_height = 100;
     win->draw_content = notepad_draw;
     win->handle_key = notepad_handle_key;
     get_notepad_state(win);
