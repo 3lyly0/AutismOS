@@ -45,6 +45,7 @@ void desktop_activate(void);
 
 // Check whether keyboard/mouse input should target the desktop shell
 uint8 is_desktop_mode(void);
+void desktop_set_dirty(void);
 
 // Get desktop state
 desktop_t* desktop_get_state(void);
