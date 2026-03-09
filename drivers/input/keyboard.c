@@ -21,6 +21,12 @@ char g_ch = 0;
 #define KEY_WIN     0x80  // Windows key (Start menu)
 #define KEY_F10     0x81  // F10 (Quit)
 #define KEY_F12     0x82  // F12
+#define KEY_F1      0x83
+#define KEY_F2      0x84
+#define KEY_F3      0x85
+#define KEY_F4      0x86
+#define KEY_F5      0x87
+#define KEY_TAB     0x88
 
 char g_scan_code_chars[128] = {
     0, 27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -129,6 +135,44 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
                 g_ctrl_pressed = TRUE;
                 break;
 
+            case 0x3B:
+                if (is_desktop_mode()) desktop_handle_key(KEY_F1);
+                break;
+
+            case 0x3C:
+                if (is_desktop_mode()) desktop_handle_key(KEY_F2);
+                break;
+
+            case 0x3D:
+                if (is_desktop_mode()) desktop_handle_key(KEY_F3);
+                break;
+
+            case 0x3E:
+                if (is_desktop_mode()) desktop_handle_key(KEY_F4);
+                break;
+
+            case 0x3F:
+                if (is_desktop_mode()) desktop_handle_key(KEY_F5);
+                break;
+
+            case 0x44:
+                if (is_desktop_mode()) desktop_handle_key(KEY_F10);
+                break;
+
+            case 0x58:
+                if (is_desktop_mode()) desktop_handle_key(KEY_F12);
+                break;
+
+            case 0x0F:
+                if (is_desktop_mode()) {
+                    if (g_alt_pressed) {
+                        desktop_handle_key(KEY_TAB);
+                    } else {
+                        desktop_handle_key('\t');
+                    }
+                }
+                break;
+
             default:
                 g_ch = g_scan_code_chars[scancode];
                 if (g_caps_lock) {
@@ -142,18 +186,31 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
                 
                 // Handle Ctrl+Key combinations
                 if (g_ctrl_pressed && g_ch != 0) {
-                    // Ctrl+Q = send quit signal (ASCII 17)
-                    if (g_ch == 'q' || g_ch == 'Q') {
-                        if (is_desktop_mode()) {
-                            desktop_handle_key(17);  // Ctrl+Q
-                        }
+                    if (is_desktop_mode()) {
+                        if (g_ch == 'q' || g_ch == 'Q') desktop_handle_key(17);      // Ctrl+Q
+                        else if (g_ch == 'w' || g_ch == 'W') desktop_handle_key(23); // Ctrl+W
+                        else if (g_ch == 'n' || g_ch == 'N') desktop_handle_key(14); // Ctrl+N
+                        else if (g_ch == 'm' || g_ch == 'M') desktop_handle_key(13); // Ctrl+M
+                        else if (g_ch == 't' || g_ch == 'T') desktop_handle_key(20); // Ctrl+T
+                        else if (g_ch == 'r' || g_ch == 'R') desktop_handle_key(18); // Ctrl+R
+                        else if (g_ch == 'i' || g_ch == 'I') desktop_handle_key(9);  // Ctrl+I
                     }
                     return;
                 }
                 
                 // Global hotkeys remain available regardless of the active shell.
                 if (g_alt_pressed && g_ch != 0) {
-                    ux_handle_hotkey(g_ch);
+                    if (is_desktop_mode()) {
+                        if (g_ch == '1') desktop_handle_key(KEY_F1);
+                        else if (g_ch == '2') desktop_handle_key(KEY_F2);
+                        else if (g_ch == '3') desktop_handle_key(KEY_F3);
+                        else if (g_ch == '4') desktop_handle_key(KEY_F4);
+                        else if (g_ch == 'm' || g_ch == 'M') desktop_handle_key(13);
+                        else if (g_ch == 'x' || g_ch == 'X') desktop_handle_key(KEY_F10);
+                        else ux_handle_hotkey(g_ch);
+                    } else {
+                        ux_handle_hotkey(g_ch);
+                    }
                 }
                 else if (is_desktop_mode() && g_ch != 0) {
                     desktop_handle_key(g_ch);
