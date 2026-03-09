@@ -23,6 +23,7 @@ AutismOS now boots into a pixel-based desktop instead of a text-mode shell.
   - Focus and z-order
   - Click-to-focus
   - Close button
+  - Maximize / restore button
   - Drag windows by the title bar
   - Resize windows from the lower-right corner
 - **Bundled apps**:
@@ -33,6 +34,10 @@ AutismOS now boots into a pixel-based desktop instead of a text-mode shell.
   - Unified title bars
   - Shared content rect calculation
   - Per-window minimum sizes
+- **Improved taskbar**:
+  - Start button
+  - Window buttons for open apps
+- **Mouse-friendly calculator UI**
 - **Custom software rendering** with a backbuffer and bitmap font
 
 ### ✅ Boot Animation
@@ -332,8 +337,11 @@ This project is licensed under the GNU General Public License (GPL) Version 3. S
 When the QEMU window has focus:
 - Click windows to focus them
 - Drag by the title bar
+- Click the square button in the title bar to maximize / restore
 - Resize from the lower-right corner
 - Click the start button to open the launcher
+- Click taskbar window buttons to switch focus
+- Click calculator buttons with the mouse
 - Press `1`, `2`, or `3` while the launcher is open to spawn apps
 - Type into the focused app
 
