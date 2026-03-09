@@ -2,20 +2,19 @@
 #include "ipc.h"
 #include "process.h"
 
-// Target process for input events (UI/Browser process)
-static uint32 input_target_pid = 1;  // Browser is typically PID 1
+// Target process for legacy IPC-delivered input events.
+// The active desktop shell handles input directly, but this path remains
+// available for future user-space apps that consume queued events.
+static uint32 input_target_pid = 1;
 
 // Initialize input subsystem
 void input_init(void) {
-    // Input is delivered via IPC to the browser process
     // No special initialization needed
 }
 
-// Send keyboard event to browser via IPC
 void input_send_key_event(uint32 type, uint32 keycode) {
-    // Find the browser process
-    process_t* browser = process_find_by_pid(input_target_pid);
-    if (!browser) {
+    process_t* target = process_find_by_pid(input_target_pid);
+    if (!target) {
         return;
     }
     
@@ -26,20 +25,16 @@ void input_send_key_event(uint32 type, uint32 keycode) {
     msg.data1 = keycode; // Key code
     msg.data2 = 0;       // Reserved
     
-    // Send to browser's inbox
-    message_queue_enqueue(&browser->inbox, &msg);
+    message_queue_enqueue(&target->inbox, &msg);
     
-    // Wake browser if waiting
-    if (browser->main_thread && browser->main_thread->state == TASK_WAITING) {
-        browser->main_thread->state = TASK_READY;
+    if (target->main_thread && target->main_thread->state == TASK_WAITING) {
+        target->main_thread->state = TASK_READY;
     }
 }
 
-// Send mouse event to browser via IPC
 void input_send_mouse_event(uint32 type, uint32 button, uint32 x, uint32 y) {
-    // Find the browser process
-    process_t* browser = process_find_by_pid(input_target_pid);
-    if (!browser) {
+    process_t* target = process_find_by_pid(input_target_pid);
+    if (!target) {
         return;
     }
     
@@ -50,11 +45,9 @@ void input_send_mouse_event(uint32 type, uint32 button, uint32 x, uint32 y) {
     msg.data1 = button;     // Mouse button
     msg.data2 = (x << 16) | (y & 0xFFFF);  // Pack X and Y coordinates
     
-    // Send to browser's inbox
-    message_queue_enqueue(&browser->inbox, &msg);
+    message_queue_enqueue(&target->inbox, &msg);
     
-    // Wake browser if waiting
-    if (browser->main_thread && browser->main_thread->state == TASK_WAITING) {
-        browser->main_thread->state = TASK_READY;
+    if (target->main_thread && target->main_thread->state == TASK_WAITING) {
+        target->main_thread->state = TASK_READY;
     }
 }
