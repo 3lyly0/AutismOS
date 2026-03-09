@@ -50,6 +50,43 @@ static window_t* desktop_find_window_by_id(uint32 window_id) {
     return NULL;
 }
 
+static void desktop_launch_notepad(void) { notepad_create(); }
+static void desktop_launch_calculator(void) { calculator_create(); }
+static void desktop_launch_sysinfo(void) { sysinfo_create(); }
+
+static void desktop_cycle_focus(void) {
+    if (g_desktop.window_count == 0) {
+        return;
+    }
+
+    if (g_desktop.focused_window == 0) {
+        desktop_focus_window(g_desktop.windows[g_desktop.window_count - 1].id);
+        return;
+    }
+
+    for (uint32 i = 0; i < g_desktop.window_count; i++) {
+        if (g_desktop.windows[i].id == g_desktop.focused_window) {
+            if (i == 0) {
+                desktop_focus_window(g_desktop.windows[g_desktop.window_count - 1].id);
+            } else {
+                desktop_focus_window(g_desktop.windows[i - 1].id);
+            }
+            return;
+        }
+    }
+}
+
+static void desktop_close_focused(void) {
+    if (g_desktop.focused_window != 0) {
+        desktop_close_window(g_desktop.focused_window);
+    }
+}
+
+static void desktop_toggle_launcher(void) {
+    g_desktop.start_menu_open = !g_desktop.start_menu_open;
+    desktop_set_dirty();
+}
+
 static void desktop_get_workspace_rect(rect_t* rect) {
     if (!rect) {
         return;
@@ -650,9 +687,63 @@ void desktop_handle_key(char key) {
         }
     }
 
-    if (key == (char)0x80 || key == 27 || key == '`') {
-        g_desktop.start_menu_open = !g_desktop.start_menu_open;
+    if (key == (char)0x80 || key == 27 || key == '`' || key == 20) {
+        desktop_toggle_launcher();
+        return;
+    }
+
+    if (key == (char)0x83 || key == '1') {
+        desktop_launch_notepad();
         desktop_set_dirty();
+        return;
+    }
+
+    if (key == (char)0x84 || key == '2') {
+        desktop_launch_calculator();
+        desktop_set_dirty();
+        return;
+    }
+
+    if (key == (char)0x85 || key == '3') {
+        desktop_launch_sysinfo();
+        desktop_set_dirty();
+        return;
+    }
+
+    if (key == (char)0x86 || key == 14) {
+        desktop_launch_notepad();
+        desktop_launch_calculator();
+        desktop_launch_sysinfo();
+        desktop_set_dirty();
+        return;
+    }
+
+    if (key == (char)0x88 || key == '\t') {
+        desktop_cycle_focus();
+        desktop_set_dirty();
+        return;
+    }
+
+    if (key == 23 || key == (char)0x81) {
+        desktop_close_focused();
+        return;
+    }
+
+    if (key == 13 || key == (char)0x87) {
+        window_t* focused_for_max = desktop_get_focused();
+        if (focused_for_max) {
+            desktop_toggle_maximize(focused_for_max);
+            desktop_set_dirty();
+        }
+        return;
+    }
+
+    if (key == 18 || key == (char)0x82) {
+        window_t* focused_for_raise = desktop_get_focused();
+        if (focused_for_raise) {
+            desktop_focus_window(focused_for_raise->id);
+            desktop_set_dirty();
+        }
         return;
     }
 

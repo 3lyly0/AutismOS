@@ -345,3 +345,21 @@ When the QEMU window has focus:
 - Press `1`, `2`, or `3` while the launcher is open to spawn apps
 - Type into the focused app
 
+### **Keyboard Shortcuts**
+
+- `Win` or `` ` `` or `Esc`: open / close the launcher
+- `F1`: open Notepad
+- `F2`: open Calculator
+- `F3`: open System Info
+- `F4`: open the full starter set of apps
+- `Alt+1`: open Notepad
+- `Alt+2`: open Calculator
+- `Alt+3`: open System Info
+- `Tab` or `Alt+Tab`: cycle focus across open windows
+- `Ctrl+W` or `F10`: close the focused window
+- `Ctrl+M` or `F5`: maximize / restore the focused window
+- `Ctrl+T`: toggle the launcher
+- `Ctrl+N`: open the starter set of apps
+- `Ctrl+R` or `F12`: re-focus / raise the current window
+- `Ctrl+Q`: halt the desktop session
+
