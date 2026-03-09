@@ -8,6 +8,7 @@
 
 static desktop_t g_desktop;
 static uint32 next_window_id = 1;
+static volatile uint8 g_desktop_mode = 0;
 
 // Character to draw for mouse cursor (0x1A = right arrow pointer)
 #define MOUSE_CHAR 0x1A
@@ -22,6 +23,14 @@ void desktop_init(void) {
     g_desktop.focused_window = 0;
     g_desktop.initialized = 1;
     g_desktop.needs_redraw = 1;  // Initial draw needed
+}
+
+void desktop_activate(void) {
+    g_desktop_mode = 1;
+}
+
+uint8 is_desktop_mode(void) {
+    return g_desktop_mode;
 }
 
 void desktop_set_dirty(void) {

@@ -40,6 +40,12 @@ typedef struct {
 // Initialize desktop
 void desktop_init(void);
 
+// Mark the desktop shell as the active interaction mode
+void desktop_activate(void);
+
+// Check whether keyboard/mouse input should target the desktop shell
+uint8 is_desktop_mode(void);
+
 // Get desktop state
 desktop_t* desktop_get_state(void);
 
@@ -72,8 +78,5 @@ void desktop_update_mouse(int dx, int dy, uint8 buttons);
 
 // Draw mouse cursor directly (used by mouse IRQ handlers)
 void desktop_draw_mouse_direct(void);
-
-// Get desktop state
-desktop_t* desktop_get_state(void);
 
 #endif
