@@ -61,20 +61,30 @@ void sysinfo_draw(window_t* win) {
     draw_text((uint32)content.x + 4, (uint32)content.y + 8, "AutismOS build", COLOR_BLACK);
     draw_text((uint32)content.x + 4, (uint32)content.y + 24, "Display: VGA 320x200", COLOR_BLACK);
     draw_text((uint32)content.x + 4, (uint32)content.y + 40, "Desktop: Pixel GUI", COLOR_BLACK);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 54, "Windows: drag, resize, maximize", COLOR_BLACK);
 
-    draw_text((uint32)content.x + 4, (uint32)content.y + 64, "Ticks:", COLOR_BLACK);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 74, "Ticks:", COLOR_BLACK);
     uint_to_str((uint32)g_timer_ticks, num);
-    draw_text((uint32)content.x + 48, (uint32)content.y + 64, num, COLOR_BLUE);
+    draw_text((uint32)content.x + 48, (uint32)content.y + 74, num, COLOR_BLUE);
 
-    draw_text((uint32)content.x + 4, (uint32)content.y + 80, "Status:", COLOR_BLACK);
-    draw_text((uint32)content.x + 48, (uint32)content.y + 80, "Running", COLOR_GREEN);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 90, "Status:", COLOR_BLACK);
+    draw_text((uint32)content.x + 48, (uint32)content.y + 90, "Running", COLOR_GREEN);
+    draw_progress_bar((uint32)content.x + 4, (uint32)content.y + 108, 100, (uint32)(g_timer_ticks % 100), COLOR_GREEN);
 
-    draw_text((uint32)content.x + 4, (uint32)content.y + 102, "R refreshes", COLOR_DARK_GRAY);
+    draw_text((uint32)content.x + 4, (uint32)content.y + 124, "R refreshes", COLOR_DARK_GRAY);
     state->update_counter++;
 }
 
 void sysinfo_handle_key(window_t* win, char key) {
     if ((key == 'r' || key == 'R') && win && win->draw_content) {
+        win->draw_content(win);
+    }
+}
+
+void sysinfo_handle_mouse(window_t* win, sint32 local_x, sint32 local_y, uint8 buttons) {
+    (void)local_x;
+    (void)local_y;
+    if ((buttons & 0x01) && win && win->draw_content) {
         win->draw_content(win);
     }
 }
@@ -89,6 +99,7 @@ window_t* sysinfo_create(void) {
     win->min_height = 126;
     win->draw_content = sysinfo_draw;
     win->handle_key = sysinfo_handle_key;
+    win->handle_mouse = sysinfo_handle_mouse;
     get_state(win);
     return win;
 }

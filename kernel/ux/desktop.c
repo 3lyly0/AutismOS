@@ -550,10 +550,6 @@ static void desktop_continue_window_interaction(sint32 x, sint32 y, uint8 button
         uint32 new_height = (uint32)(y - (sint32)w->y + 4);
         desktop_resize_window(w, new_width, new_height);
         desktop_set_dirty();
-    } else if (g_desktop.active_hit == DESKTOP_HIT_CLIENT && w->handle_mouse) {
-        rect_t content;
-        desktop_get_window_content_rect(w, &content);
-        w->handle_mouse(w, x - content.x, y - content.y, buttons);
     }
 }
 
