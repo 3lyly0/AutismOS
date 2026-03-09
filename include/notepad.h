@@ -21,5 +21,6 @@ window_t* notepad_create(void);
 // Notepad callbacks
 void notepad_draw(window_t* win);
 void notepad_handle_key(window_t* win, char key);
+void notepad_handle_mouse(window_t* win, sint32 local_x, sint32 local_y, uint8 buttons);
 
 #endif
