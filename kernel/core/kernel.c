@@ -14,6 +14,8 @@
 #include "usermode.h"
 #include "shm.h"
 #include "input.h"
+#include "input_manager.h"
+#include "theme.h"
 #include "network.h"
 #include "html.h"
 #include "layout.h"
@@ -47,6 +49,9 @@ void kernel_panic(const char* message) {
 void timer_interrupt_handler(REGISTERS* r) {
     (void)r;
     g_timer_ticks++;
+    
+    // Update input manager tick
+    input_tick();
 }
 
 void kmain(uint32 magic, multiboot_info_t* mbi) {
@@ -77,8 +82,17 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
 
     shm_init();
     input_init();
-    mouse_init();  // Initialize PS/2 mouse (original driver)
-    mouse_smooth_init();  // Initialize smooth mouse (new alternative driver)
+    
+    // Initialize the new input manager BEFORE mouse driver
+    input_manager_init();
+    
+    // Initialize theme system
+    theme_init();
+    
+    // Initialize PS/2 mouse driver (posts events to input_manager)
+    mouse_init();
+    mouse_smooth_init();
+    
     network_init();
     html_init();
     layout_init();
@@ -86,7 +100,7 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
     task_init();
     process_init();
 
-    // Run the current desktop shell directly from the kernel main loop.
+    // Initialize desktop (registers input listener)
     desktop_init();
     desktop_activate();
     notepad_create();
@@ -97,9 +111,8 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
     asm volatile("sti");
 
     // Run desktop in main loop
+    // Input is handled via input_manager listeners, just need to draw
     for (;;) {
-        desktop_t* ds = desktop_get_state();
-        desktop_handle_mouse(ds->mouse_x, ds->mouse_y, ds->mouse_buttons);
         desktop_draw();
         asm volatile("hlt");
     }
