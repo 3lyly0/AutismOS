@@ -33,12 +33,13 @@ APPS = apps
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o $(BUILD)/syscall.o $(BUILD)/user_program_asm.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o $(BUILD)/pci.o\
-$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/mouse_smooth.o $(BUILD)/memory.o $(BUILD)/kheap.o $(BUILD)/pmm.o $(BUILD)/vmm.o $(BUILD)/scheduler.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
+$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/mouse_smooth.o $(BUILD)/input_manager.o $(BUILD)/memory.o $(BUILD)/kheap.o $(BUILD)/pmm.o $(BUILD)/vmm.o $(BUILD)/scheduler.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
 		$(BUILD)/input.o $(BUILD)/network.o $(BUILD)/html.o $(BUILD)/layout.o\
 		$(BUILD)/rtl8139.o $(BUILD)/ethernet.o $(BUILD)/arp.o $(BUILD)/ip.o $(BUILD)/icmp.o $(BUILD)/tcp.o\
 		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/desktop.o $(BUILD)/kernel.o\
 $(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/boot_animation.o $(BUILD)/disk.o $(BUILD)/sound.o\
-		$(BUILD)/gfx_server.o $(BUILD)/libgfx.o $(BUILD)/notepad.o $(BUILD)/calculator.o $(BUILD)/sysinfo.o
+		$(BUILD)/gfx_server.o $(BUILD)/libgfx.o $(BUILD)/notepad.o $(BUILD)/calculator.o $(BUILD)/sysinfo.o\
+		$(BUILD)/widget.o $(BUILD)/theme.o
 
 
 all: $(BUILD) $(OBJECTS)
@@ -173,6 +174,10 @@ $(BUILD)/mouse_smooth.o : $(DRIVERS)/input/mouse_smooth.c
 $(BUILD)/input.o : $(DRIVERS)/input/input.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/input/input.c -o $(BUILD)/input.o
 
+# Kernel input manager
+$(BUILD)/input_manager.o : $(KERNEL)/input/input_manager.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/input/input_manager.c -o $(BUILD)/input_manager.o
+
 # Video drivers
 $(BUILD)/video.o : $(DRIVERS)/video/video.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/video.c -o $(BUILD)/video.o
@@ -185,6 +190,12 @@ $(BUILD)/ui.o : $(DRIVERS)/video/ui.c
 
 $(BUILD)/boot_animation.o : $(DRIVERS)/video/boot_animation.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/boot_animation.c -o $(BUILD)/boot_animation.o
+
+$(BUILD)/widget.o : $(DRIVERS)/video/widget.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/widget.c -o $(BUILD)/widget.o
+
+$(BUILD)/theme.o : $(DRIVERS)/video/theme.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/video/theme.c -o $(BUILD)/theme.o
 
 # Storage drivers
 $(BUILD)/disk.o : $(DRIVERS)/storage/disk.c
