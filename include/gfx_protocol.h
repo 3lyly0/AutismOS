@@ -75,6 +75,10 @@ typedef enum {
     GFX_WINDOW_MODAL        = 0x20
 } gfx_window_flags_t;
 
+/* Additional error codes */
+#define GFX_ERR_OUT_OF_MEMORY   -7
+#define GFX_ERR_INVALID_WINDOW  -1
+
 /* Input event types */
 typedef enum {
     GFX_INPUT_KEY_PRESS     = 0,
