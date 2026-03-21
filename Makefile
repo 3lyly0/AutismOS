@@ -33,12 +33,12 @@ APPS = apps
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o $(BUILD)/syscall.o $(BUILD)/user_program_asm.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o $(BUILD)/pci.o\
-		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/mouse_smooth.o $(BUILD)/memory.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
+$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/mouse_smooth.o $(BUILD)/memory.o $(BUILD)/kheap.o $(BUILD)/pmm.o $(BUILD)/vmm.o $(BUILD)/scheduler.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
 		$(BUILD)/input.o $(BUILD)/network.o $(BUILD)/html.o $(BUILD)/layout.o\
 		$(BUILD)/rtl8139.o $(BUILD)/ethernet.o $(BUILD)/arp.o $(BUILD)/ip.o $(BUILD)/icmp.o $(BUILD)/tcp.o\
 		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/desktop.o $(BUILD)/kernel.o\
-		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/boot_animation.o $(BUILD)/disk.o $(BUILD)/sound.o\
-		$(BUILD)/notepad.o $(BUILD)/calculator.o $(BUILD)/sysinfo.o
+$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/boot_animation.o $(BUILD)/disk.o $(BUILD)/sound.o\
+		$(BUILD)/gfx_server.o $(BUILD)/libgfx.o $(BUILD)/notepad.o $(BUILD)/calculator.o $(BUILD)/sysinfo.o
 
 
 all: $(BUILD) $(OBJECTS)
@@ -89,6 +89,18 @@ $(BUILD)/kernel.o : $(KERNEL)/core/kernel.c
 
 $(BUILD)/memory.o : $(KERNEL)/core/memory.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/memory.c -o $(BUILD)/memory.o
+
+$(BUILD)/kheap.o : $(KERNEL)/core/kheap.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/kheap.c -o $(BUILD)/kheap.o
+
+$(BUILD)/pmm.o : $(KERNEL)/core/pmm.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/pmm.c -o $(BUILD)/pmm.o
+
+$(BUILD)/vmm.o : $(KERNEL)/core/vmm.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/vmm.c -o $(BUILD)/vmm.o
+
+$(BUILD)/scheduler.o : $(KERNEL)/core/scheduler.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/scheduler.c -o $(BUILD)/scheduler.o
 
 $(BUILD)/task.o : $(KERNEL)/core/task.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/core/task.c -o $(BUILD)/task.o
@@ -204,6 +216,13 @@ $(BUILD)/tcp.o : $(DRIVERS)/network/tcp.c
 
 $(BUILD)/string.o : $(LIB)/string.c
 	$(CC) $(CC_FLAGS) -c $(LIB)/string.c -o $(BUILD)/string.o
+
+$(BUILD)/libgfx.o : $(LIB)/libgfx.c
+	$(CC) $(CC_FLAGS) -c $(LIB)/libgfx.c -o $(BUILD)/libgfx.o
+
+# Graphics server
+$(BUILD)/gfx_server.o : $(KERNEL)/graphics/gfx_server.c
+	$(CC) $(CC_FLAGS) -c $(KERNEL)/graphics/gfx_server.c -o $(BUILD)/gfx_server.o
 
 # Apps
 $(BUILD)/notepad.o : $(APPS)/notepad.c
