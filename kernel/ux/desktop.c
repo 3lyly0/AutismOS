@@ -1,4 +1,3 @@
-#include "desktop.h"
 #include "graphics.h"
 #include "string.h"
 #include "video.h"
@@ -48,22 +47,28 @@ static uint32 next_window_id = 1;
 static volatile uint8 g_desktop_mode = 0;
 
 // ============================================================================
-// Forward Declarations
+// Forward Declarations (only for static functions)
 // ============================================================================
 
 static void desktop_cycle_focus(void);
 static void desktop_close_focused(void);
 static void desktop_toggle_launcher(void);
 static void desktop_bring_to_front(uint32 index);
-static void desktop_set_dirty(void);
-static void desktop_focus_window(uint32 window_id);
-static void desktop_close_window(uint32 window_id);
-static window_t* desktop_get_focused(void);
-static void desktop_move_window(window_t* w, sint32 x, sint32 y);
-static void desktop_resize_window(window_t* w, uint32 width, uint32 height);
-static void desktop_toggle_maximize(window_t* w);
-static void desktop_get_window_content_rect(const window_t* w, rect_t* rect);
-static desktop_hit_region_t desktop_hit_test_window(const window_t* w, sint32 x, sint32 y);
+static void desktop_launch_notepad(void);
+static void desktop_launch_calculator(void);
+static void desktop_launch_sysinfo(void);
+static void desktop_draw_wallpaper(void);
+static void desktop_draw_taskbar(void);
+static void desktop_draw_menu(void);
+static void desktop_draw_resize_grip(const window_t* w);
+static void desktop_draw_maximize_button(const window_t* w);
+static int point_in_rect(sint32 x, sint32 y, sint32 rx, sint32 ry, sint32 rw, sint32 rh);
+static window_t* desktop_find_window_by_id(uint32 window_id);
+static void desktop_get_workspace_rect(rect_t* rect);
+static void desktop_handle_menu_click(sint32 x, sint32 y);
+static int desktop_handle_taskbar_click(sint32 x, sint32 y);
+static void desktop_begin_window_interaction(window_t* w, desktop_hit_region_t hit, sint32 x, sint32 y);
+static void desktop_continue_window_interaction(sint32 x, sint32 y, uint8 buttons);
 
 // ============================================================================
 // Helper Functions
@@ -150,17 +155,14 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
     
     switch (event->type) {
         case INPUT_EVENT_MOUSE_MOVE: {
-            // Get position directly from input_manager (already processed)
             sint32 new_x = event->data.mouse.x;
             sint32 new_y = event->data.mouse.y;
             
-            // Only redraw if mouse actually moved significantly
             if (new_x != g_desktop.mouse_x || new_y != g_desktop.mouse_y) {
                 g_desktop.mouse_x = new_x;
                 g_desktop.mouse_y = new_y;
                 g_desktop.mouse_buttons = event->data.mouse.buttons;
                 
-                // Continue window interaction if active
                 if (g_desktop.active_window != 0 && (event->data.mouse.buttons & MOUSE_BUTTON_LEFT)) {
                     window_t* w = desktop_find_window_by_id(g_desktop.active_window);
                     if (w) {
@@ -185,14 +187,12 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
             g_desktop.mouse_buttons = event->data.mouse.buttons;
             
             if (event->data.mouse.button_changed == MOUSE_BUTTON_LEFT) {
-                // Check start button
                 if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, 8, SCREEN_HEIGHT - TASKBAR_HEIGHT + 3, START_BUTTON_W, START_BUTTON_H)) {
                     g_desktop.start_menu_open = !g_desktop.start_menu_open;
                     desktop_set_dirty();
                     return;
                 }
                 
-                // Check menu clicks
                 if (g_desktop.start_menu_open) {
                     sint32 menu_y = SCREEN_HEIGHT - TASKBAR_HEIGHT - START_MENU_H;
                     if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, 18, menu_y + 24, 134, 18)) {
@@ -209,7 +209,6 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
                     return;
                 }
                 
-                // Check taskbar window buttons
                 sint32 button_x = 74;
                 for (uint32 i = 0; i < g_desktop.window_count; i++) {
                     if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, button_x, SCREEN_HEIGHT - TASKBAR_HEIGHT + 2, TASKBAR_BUTTON_W, 15)) {
@@ -220,7 +219,6 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
                     button_x += TASKBAR_BUTTON_W + TASKBAR_BUTTON_SPACING;
                 }
                 
-                // Check window interactions
                 for (sint32 i = (sint32)g_desktop.window_count - 1; i >= 0; i--) {
                     window_t* w = &g_desktop.windows[i];
                     desktop_hit_region_t hit = desktop_hit_test_window(w, g_desktop.mouse_x, g_desktop.mouse_y);
@@ -241,7 +239,6 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
                         return;
                     }
                     
-                    // Begin window interaction
                     g_desktop.active_window = w->id;
                     g_desktop.active_hit = hit;
                     g_desktop.drag_offset_x = g_desktop.mouse_x - (sint32)w->x;
@@ -271,7 +268,6 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
         }
             
         case INPUT_EVENT_KEY_PRESS: {
-            // Handle keyboard shortcuts
             if (event->data.key.keycode == KEY_ESCAPE) {
                 if (g_desktop.start_menu_open) {
                     g_desktop.start_menu_open = 0;
@@ -296,7 +292,6 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
                 return;
             }
             
-            // Forward character to keyboard handler
             if (event->data.key.character) {
                 desktop_handle_key(event->data.key.character);
             }
@@ -317,7 +312,6 @@ static void desktop_draw_wallpaper(void) {
     uint8 bg_secondary = theme_color(THEME_BG_SECONDARY);
     uint8 accent = theme_color(THEME_ACCENT_PRIMARY);
     
-    // Gradient background
     for (sint32 y = 0; y < SCREEN_HEIGHT - TASKBAR_HEIGHT; y++) {
         uint8 color = bg_primary;
         if (y > 46 && y < 108) {
@@ -328,7 +322,6 @@ static void desktop_draw_wallpaper(void) {
         draw_line(0, y, SCREEN_WIDTH - 1, y, color);
     }
     
-    // Pattern overlay
     for (sint32 y = 10; y < SCREEN_HEIGHT - TASKBAR_HEIGHT; y += 18) {
         for (sint32 x = 8; x < SCREEN_WIDTH; x += 22) {
             draw_pixel(x, y, theme_color(THEME_FG_PRIMARY));
@@ -336,7 +329,6 @@ static void desktop_draw_wallpaper(void) {
         }
     }
     
-    // Logo area
     uint8 logo_bg = theme_color(THEME_ACCENT_SECONDARY);
     uint8 logo_fg = theme_color(THEME_FG_PRIMARY);
     
@@ -351,11 +343,9 @@ static void desktop_draw_taskbar(void) {
     uint8 taskbar_border = theme_color(THEME_BORDER_NORMAL);
     uint8 text_color = theme_color(THEME_FG_PRIMARY);
     
-    // Taskbar background
     draw_filled_rect(0, SCREEN_HEIGHT - TASKBAR_HEIGHT, SCREEN_WIDTH, TASKBAR_HEIGHT, taskbar_bg);
     draw_line(0, SCREEN_HEIGHT - TASKBAR_HEIGHT, SCREEN_WIDTH - 1, SCREEN_HEIGHT - TASKBAR_HEIGHT, taskbar_border);
     
-    // Start button
     uint8 start_bg = g_desktop.start_menu_open ? 
                      theme_color(THEME_ACCENT_PRIMARY) : 
                      theme_color(THEME_STATE_NORMAL);
@@ -365,7 +355,6 @@ static void desktop_draw_taskbar(void) {
     draw_rect(8, SCREEN_HEIGHT - TASKBAR_HEIGHT + 3, START_BUTTON_W, START_BUTTON_H, taskbar_border);
     draw_text(18, SCREEN_HEIGHT - TASKBAR_HEIGHT + 7, "AutismOS", start_fg);
     
-    // Window buttons in taskbar
     sint32 x = 74;
     for (uint32 i = 0; i < g_desktop.window_count && x + TASKBAR_BUTTON_W < SCREEN_WIDTH - 8; i++) {
         window_t* w = &g_desktop.windows[i];
@@ -383,7 +372,6 @@ static void desktop_draw_taskbar(void) {
         x += TASKBAR_BUTTON_W + TASKBAR_BUTTON_SPACING;
     }
     
-    // Status text
     draw_text(248, SCREEN_HEIGHT - 13, "GUI shell", text_color);
 }
 
@@ -398,32 +386,26 @@ static void desktop_draw_menu(void) {
     sint32 menu_x = 8;
     sint32 menu_y = SCREEN_HEIGHT - TASKBAR_HEIGHT - START_MENU_H;
     
-    // Menu background
     draw_filled_rect(menu_x, menu_y, START_MENU_W, START_MENU_H, menu_bg);
     draw_rect(menu_x, menu_y, START_MENU_W, START_MENU_H, menu_border);
     
-    // Header
     draw_filled_rect(menu_x, menu_y, START_MENU_W, 18, header_bg);
     draw_text(menu_x + 8, menu_y + 6, "Launch apps", text_color);
     
-    // Menu items
     sint32 item_y = menu_y + 24;
     
-    // Notepad
     draw_filled_rect(menu_x + 10, item_y, 134, 18, theme_color(THEME_ACCENT_PRIMARY));
     draw_rect(menu_x + 10, item_y, 134, 18, menu_border);
     draw_text(menu_x + 16, item_y + 4, "Notepad", text_color);
     draw_text(menu_x + 82, item_y + 4, "press 1", theme_color(THEME_FG_SECONDARY));
     item_y += 21;
     
-    // Calculator
     draw_filled_rect(menu_x + 10, item_y, 134, 18, COLOR_GREEN);
     draw_rect(menu_x + 10, item_y, 134, 18, menu_border);
     draw_text(menu_x + 16, item_y + 4, "Calculator", text_color);
     draw_text(menu_x + 82, item_y + 4, "press 2", theme_color(THEME_FG_SECONDARY));
     item_y += 21;
     
-    // System Info
     draw_filled_rect(menu_x + 10, item_y, 134, 18, COLOR_CYAN);
     draw_rect(menu_x + 10, item_y, 134, 18, menu_border);
     draw_text(menu_x + 16, item_y + 4, "System Info", text_color);
@@ -460,31 +442,24 @@ void desktop_draw_window(window_t* w) {
     
     desktop_get_window_content_rect(w, &content);
     
-    // Get theme colors for window
     uint8 titlebar_color, border_color, content_color;
     theme_get_window_colors(w->focused, &titlebar_color, &border_color, &content_color);
     
-    // Shadow
     draw_filled_rect(w->x + g_chrome.shadow_size, w->y + g_chrome.shadow_size, 
                     w->width, w->height, theme_color(THEME_BG_SECONDARY));
     
-    // Window background
     draw_filled_rect(w->x, w->y, w->width, w->height, content_color);
     draw_rect(w->x, w->y, w->width, w->height, border_color);
     
-    // Titlebar
     draw_filled_rect(w->x, w->y, w->width, g_chrome.titlebar_height, titlebar_color);
     draw_line((sint32)w->x, (sint32)(w->y + g_chrome.titlebar_height), 
               (sint32)(w->x + w->width - 1), (sint32)(w->y + g_chrome.titlebar_height), 
               theme_color(THEME_BORDER_NORMAL));
     
-    // Title text
     draw_text(w->x + 6, w->y + 5, w->title, w->title_color);
     
-    // Maximize button
     desktop_draw_maximize_button(w);
     
-    // Close button
     draw_filled_rect(w->x + w->width - g_chrome.close_button_size - 6, w->y + 3, 
                     g_chrome.close_button_size, g_chrome.close_button_size, 
                     theme_color(THEME_STATE_ERROR));
@@ -494,17 +469,14 @@ void desktop_draw_window(window_t* w) {
     draw_text(w->x + w->width - g_chrome.close_button_size - 3, w->y + 6, "X", 
               theme_color(THEME_FG_PRIMARY));
     
-    // Content area
     draw_filled_rect((uint32)content.x - 1, (uint32)content.y - 1, 
                     (uint32)content.width + 2, (uint32)content.height + 2, 
                     theme_color(THEME_BG_PRIMARY));
     
-    // Resize grip
     if (w->flags & WINDOW_FLAG_RESIZABLE) {
         desktop_draw_resize_grip(w);
     }
     
-    // Custom content drawing
     if (w->draw_content) {
         w->draw_content(w);
     }
@@ -517,7 +489,6 @@ void desktop_draw_window(window_t* w) {
 void desktop_init(void) {
     memset(&g_desktop, 0, sizeof(desktop_t));
     
-    // Initialize mouse from input_manager
     g_desktop.mouse_x = input_get_mouse_x();
     g_desktop.mouse_y = input_get_mouse_y();
     g_desktop.last_mouse_x = g_desktop.mouse_x;
@@ -525,7 +496,6 @@ void desktop_init(void) {
     g_desktop.initialized = 1;
     g_desktop.needs_redraw = 1;
     
-    // Register input listener with high priority
     input_add_listener("desktop", desktop_input_handler, NULL, 10);
 }
 
@@ -626,19 +596,16 @@ desktop_hit_region_t desktop_hit_test_window(const window_t* w, sint32 x, sint32
         return DESKTOP_HIT_NONE;
     }
     
-    // Close button
     if (point_in_rect(x, y, (sint32)(w->x + w->width - g_chrome.close_button_size - 6), (sint32)(w->y + 3),
         (sint32)g_chrome.close_button_size, (sint32)g_chrome.close_button_size)) {
         return DESKTOP_HIT_CLOSE;
     }
     
-    // Maximize button
     if (point_in_rect(x, y, (sint32)(w->x + w->width - g_chrome.close_button_size - 22), (sint32)(w->y + 3),
         (sint32)g_chrome.close_button_size, (sint32)g_chrome.close_button_size)) {
         return DESKTOP_HIT_MAXIMIZE;
     }
     
-    // Resize grip
     if ((w->flags & WINDOW_FLAG_RESIZABLE) &&
         point_in_rect(x, y, (sint32)(w->x + w->width - g_chrome.resize_grip_size - 4), 
                      (sint32)(w->y + w->height - g_chrome.resize_grip_size - 4),
@@ -646,7 +613,6 @@ desktop_hit_region_t desktop_hit_test_window(const window_t* w, sint32 x, sint32
         return DESKTOP_HIT_RESIZE;
     }
     
-    // Titlebar
     if (point_in_rect(x, y, (sint32)w->x, (sint32)w->y, (sint32)w->width, (sint32)g_chrome.titlebar_height)) {
         return DESKTOP_HIT_TITLEBAR;
     }
@@ -751,21 +717,17 @@ void desktop_draw(void) {
     
     g_desktop.needs_redraw = 0;
     
-    // Update mouse position from input_manager
     g_desktop.mouse_x = input_get_mouse_x();
     g_desktop.mouse_y = input_get_mouse_y();
     
-    // Draw all layers
     desktop_draw_wallpaper();
     desktop_draw_taskbar();
     desktop_draw_menu();
     
-    // Draw windows
     for (uint32 i = 0; i < g_desktop.window_count; i++) {
         desktop_draw_window(&g_desktop.windows[i]);
     }
     
-    // Draw cursor
     draw_cursor((uint32)g_desktop.mouse_x, (uint32)g_desktop.mouse_y, 1);
     graphics_present();
     
@@ -883,7 +845,6 @@ void desktop_handle_key(char key) {
         }
     }
     
-    // Forward to focused window
     window_t* focused = desktop_get_focused();
     if (focused && focused->handle_key) {
         focused->handle_key(focused, key);
