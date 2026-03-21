@@ -22,50 +22,10 @@ void input_manager_init(void) {
     g_input.mouse.y = SCREEN_HEIGHT / 2;
     g_input.mouse.visible = 1;
     
-    // Default settings
-    g_input.mouse_sensitivity = 5;
-    g_input.mouse_acceleration = 1;
-    g_input.mouse_smoothing = 1;
-}
-
-// ============================================================================
-// Internal: Apply mouse acceleration
-// ============================================================================
-
-static sint32 apply_acceleration(sint32 delta) {
-    if (g_input.mouse_acceleration == 0) {
-        return delta;
-    }
-    
-    // Simple acceleration: multiply by (1 + |delta| / threshold)
-    sint32 accel_factor = 1 + (delta * delta) / (64 * g_input.mouse_acceleration);
-    
-    if (delta > 0) {
-        return delta * accel_factor / 8;
-    } else {
-        return delta * accel_factor / 8;
-    }
-}
-
-// ============================================================================
-// Internal: Apply mouse smoothing (exponential moving average)
-// ============================================================================
-
-static void apply_smoothing(sint32* dx, sint32* dy) {
-    if (g_input.mouse_smoothing == 0) {
-        return;
-    }
-    
-    // Smoothing factor (higher = more smoothing)
-    sint32 factor = g_input.mouse_smoothing * 2;
-    
-    // Update velocity
-    g_input.mouse_velocity_x = (g_input.mouse_velocity_x * factor + *dx) / (factor + 1);
-    g_input.mouse_velocity_y = (g_input.mouse_velocity_y * factor + *dy) / (factor + 1);
-    
-    // Blend current input with smoothed velocity
-    *dx = (*dx + g_input.mouse_velocity_x * 2) / 3;
-    *dy = (*dy + g_input.mouse_velocity_y * 2) / 3;
+    // Default settings - lower sensitivity for better control
+    g_input.mouse_sensitivity = 3;
+    g_input.mouse_acceleration = 0;  // Disabled by default
+    g_input.mouse_smoothing = 0;     // Disabled by default
 }
 
 // ============================================================================
@@ -75,7 +35,7 @@ static void apply_smoothing(sint32* dx, sint32* dy) {
 static void clamp_mouse_position(void) {
     sint32 min_x = 0;
     sint32 min_y = 0;
-    sint32 max_x = SCREEN_WIDTH - 10;  // Leave some margin for cursor
+    sint32 max_x = SCREEN_WIDTH - 10;
     sint32 max_y = SCREEN_HEIGHT - 16;
     
     if (g_input.mouse.confined) {
@@ -113,19 +73,15 @@ void input_post_event(const input_event_t* event) {
     // Update internal state based on event
     switch (event->type) {
         case INPUT_EVENT_MOUSE_MOVE: {
+            // Direct delta values - no double processing
             sint32 dx = event->data.mouse.dx;
             sint32 dy = event->data.mouse.dy;
             
-            // Apply sensitivity (multiply by sensitivity, divide by 5)
-            dx = dx * (sint32)g_input.mouse_sensitivity / 5;
-            dy = dy * (sint32)g_input.mouse_sensitivity / 5;
-            
-            // Apply acceleration
-            dx = apply_acceleration(dx);
-            dy = apply_acceleration(dy);
-            
-            // Apply smoothing
-            apply_smoothing(&dx, &dy);
+            // Apply sensitivity (simple scaling)
+            if (g_input.mouse_sensitivity != 5) {
+                dx = dx * (sint32)g_input.mouse_sensitivity / 5;
+                dy = dy * (sint32)g_input.mouse_sensitivity / 5;
+            }
             
             // Update position (Y is inverted for typical mouse movement)
             g_input.mouse.x += dx;
@@ -140,8 +96,6 @@ void input_post_event(const input_event_t* event) {
         case INPUT_EVENT_MOUSE_PRESS:
         case INPUT_EVENT_MOUSE_RELEASE:
             g_input.mouse.buttons = event->data.mouse.buttons;
-            g_input.mouse.x = event->data.mouse.x;
-            g_input.mouse.y = event->data.mouse.y;
             break;
             
         case INPUT_EVENT_KEY_PRESS:
@@ -399,8 +353,4 @@ void input_set_mouse_smoothing(uint8 level) {
 
 void input_tick(void) {
     g_input.tick_count++;
-    
-    // Decay mouse velocity when no movement
-    g_input.mouse_velocity_x = (g_input.mouse_velocity_x * 7) / 8;
-    g_input.mouse_velocity_y = (g_input.mouse_velocity_y * 7) / 8;
 }

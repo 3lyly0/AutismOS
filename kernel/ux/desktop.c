@@ -82,49 +82,159 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
     if (!g_desktop_mode) return;
     
     switch (event->type) {
-        case INPUT_EVENT_MOUSE_MOVE:
-            // Update mouse position from input_manager
-            g_desktop.mouse_x = event->data.mouse.x;
-            g_desktop.mouse_y = event->data.mouse.y;
-            g_desktop.mouse_buttons = event->data.mouse.buttons;
-            desktop_set_dirty();
-            break;
+        case INPUT_EVENT_MOUSE_MOVE: {
+            // Get position directly from input_manager (already processed)
+            sint32 new_x = event->data.mouse.x;
+            sint32 new_y = event->data.mouse.y;
             
-        case INPUT_EVENT_MOUSE_PRESS:
-        case INPUT_EVENT_MOUSE_RELEASE:
-            g_desktop.mouse_x = event->data.mouse.x;
-            g_desktop.mouse_y = event->data.mouse.y;
-            g_desktop.mouse_buttons = event->data.mouse.buttons;
-            desktop_handle_mouse(g_desktop.mouse_x, g_desktop.mouse_y, g_desktop.mouse_buttons);
-            break;
-            
-        case INPUT_EVENT_KEY_PRESS:
-            // Handle keyboard shortcuts
-            if (event->data.key.character) {
-                desktop_handle_key(event->data.key.character);
+            // Only redraw if mouse actually moved significantly
+            if (new_x != g_desktop.mouse_x || new_y != g_desktop.mouse_y) {
+                g_desktop.mouse_x = new_x;
+                g_desktop.mouse_y = new_y;
+                g_desktop.mouse_buttons = event->data.mouse.buttons;
+                
+                // Continue window interaction if active
+                if (g_desktop.active_window != 0 && (event->data.mouse.buttons & MOUSE_BUTTON_LEFT)) {
+                    window_t* w = desktop_find_window_by_id(g_desktop.active_window);
+                    if (w) {
+                        if (g_desktop.active_hit == DESKTOP_HIT_TITLEBAR && (w->flags & WINDOW_FLAG_DRAGGABLE)) {
+                            desktop_move_window(w, new_x - g_desktop.drag_offset_x, new_y - g_desktop.drag_offset_y);
+                        } else if (g_desktop.active_hit == DESKTOP_HIT_RESIZE && (w->flags & WINDOW_FLAG_RESIZABLE)) {
+                            uint32 new_width = (uint32)(new_x - (sint32)w->x + 4);
+                            uint32 new_height = (uint32)(new_y - (sint32)w->y + 4);
+                            desktop_resize_window(w, new_width, new_height);
+                        }
+                    }
+                }
+                
+                desktop_set_dirty();
             }
-            // Also handle special keys by keycode
+            break;
+        }
+            
+        case INPUT_EVENT_MOUSE_PRESS: {
+            g_desktop.mouse_x = event->data.mouse.x;
+            g_desktop.mouse_y = event->data.mouse.y;
+            g_desktop.mouse_buttons = event->data.mouse.buttons;
+            
+            if (event->data.mouse.button_changed == MOUSE_BUTTON_LEFT) {
+                // Check start button
+                if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, 8, SCREEN_HEIGHT - TASKBAR_HEIGHT + 3, START_BUTTON_W, START_BUTTON_H)) {
+                    g_desktop.start_menu_open = !g_desktop.start_menu_open;
+                    desktop_set_dirty();
+                    return;
+                }
+                
+                // Check menu clicks
+                if (g_desktop.start_menu_open) {
+                    sint32 menu_y = SCREEN_HEIGHT - TASKBAR_HEIGHT - START_MENU_H;
+                    if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, 18, menu_y + 24, 134, 18)) {
+                        notepad_create();
+                        g_desktop.start_menu_open = 0;
+                    } else if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, 18, menu_y + 45, 134, 18)) {
+                        calculator_create();
+                        g_desktop.start_menu_open = 0;
+                    } else if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, 18, menu_y + 66, 134, 18)) {
+                        sysinfo_create();
+                        g_desktop.start_menu_open = 0;
+                    }
+                    desktop_set_dirty();
+                    return;
+                }
+                
+                // Check taskbar window buttons
+                sint32 button_x = 74;
+                for (uint32 i = 0; i < g_desktop.window_count; i++) {
+                    if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, button_x, SCREEN_HEIGHT - TASKBAR_HEIGHT + 2, TASKBAR_BUTTON_W, 15)) {
+                        desktop_focus_window(g_desktop.windows[i].id);
+                        desktop_set_dirty();
+                        return;
+                    }
+                    button_x += TASKBAR_BUTTON_W + TASKBAR_BUTTON_SPACING;
+                }
+                
+                // Check window interactions
+                for (sint32 i = (sint32)g_desktop.window_count - 1; i >= 0; i--) {
+                    window_t* w = &g_desktop.windows[i];
+                    desktop_hit_region_t hit = desktop_hit_test_window(w, g_desktop.mouse_x, g_desktop.mouse_y);
+                    if (hit == DESKTOP_HIT_NONE) continue;
+                    
+                    if (hit == DESKTOP_HIT_CLOSE) {
+                        desktop_close_window(w->id);
+                        desktop_set_dirty();
+                        return;
+                    }
+                    
+                    desktop_focus_window(w->id);
+                    w = desktop_get_focused();
+                    
+                    if (hit == DESKTOP_HIT_MAXIMIZE) {
+                        desktop_toggle_maximize(w);
+                        desktop_set_dirty();
+                        return;
+                    }
+                    
+                    // Begin window interaction
+                    g_desktop.active_window = w->id;
+                    g_desktop.active_hit = hit;
+                    g_desktop.drag_offset_x = g_desktop.mouse_x - (sint32)w->x;
+                    g_desktop.drag_offset_y = g_desktop.mouse_y - (sint32)w->y;
+                    
+                    if (hit == DESKTOP_HIT_CLIENT && w && w->handle_mouse) {
+                        rect_t content;
+                        desktop_get_window_content_rect(w, &content);
+                        w->handle_mouse(w, g_desktop.mouse_x - content.x, g_desktop.mouse_y - content.y, g_desktop.mouse_buttons);
+                    }
+                    
+                    desktop_set_dirty();
+                    return;
+                }
+            }
+            break;
+        }
+            
+        case INPUT_EVENT_MOUSE_RELEASE: {
+            g_desktop.mouse_buttons = event->data.mouse.buttons;
+            
+            if (event->data.mouse.button_changed == MOUSE_BUTTON_LEFT) {
+                g_desktop.active_window = 0;
+                g_desktop.active_hit = DESKTOP_HIT_NONE;
+            }
+            break;
+        }
+            
+        case INPUT_EVENT_KEY_PRESS: {
+            // Handle keyboard shortcuts
             if (event->data.key.keycode == KEY_ESCAPE) {
                 if (g_desktop.start_menu_open) {
                     g_desktop.start_menu_open = 0;
                     desktop_set_dirty();
-                }
-            } else if (event->data.key.keycode == KEY_TAB) {
-                if (event->data.key.ctrl) {
-                    // Ctrl+Tab: cycle windows
-                    // Already handled in desktop_handle_key
+                    return;
                 }
             } else if (event->data.key.keycode == KEY_F1) {
                 notepad_create();
                 desktop_set_dirty();
+                return;
             } else if (event->data.key.keycode == KEY_F2) {
                 calculator_create();
                 desktop_set_dirty();
+                return;
             } else if (event->data.key.keycode == KEY_F3) {
                 sysinfo_create();
                 desktop_set_dirty();
+                return;
+            } else if (event->data.key.keycode == KEY_TAB && event->data.key.ctrl) {
+                desktop_cycle_focus();
+                desktop_set_dirty();
+                return;
+            }
+            
+            // Forward character to keyboard handler
+            if (event->data.key.character) {
+                desktop_handle_key(event->data.key.character);
             }
             break;
+        }
             
         default:
             break;
@@ -646,146 +756,19 @@ void desktop_draw(void) {
 }
 
 // ============================================================================
-// Mouse Handling (called from input handler)
+// Legacy Functions (kept for compatibility)
 // ============================================================================
 
 void desktop_update_mouse(int dx, int dy, uint8 buttons) {
-    // This is now handled by input_manager, but kept for compatibility
     (void)dx;
     (void)dy;
     (void)buttons;
 }
 
-static void desktop_handle_menu_click(sint32 x, sint32 y) {
-    if (!g_desktop.start_menu_open) return;
-    
-    sint32 menu_x = 8;
-    sint32 menu_y = SCREEN_HEIGHT - TASKBAR_HEIGHT - START_MENU_H;
-    
-    if (point_in_rect(x, y, menu_x + 10, menu_y + 24, 134, 18)) {
-        notepad_create();
-    } else if (point_in_rect(x, y, menu_x + 10, menu_y + 45, 134, 18)) {
-        calculator_create();
-    } else if (point_in_rect(x, y, menu_x + 10, menu_y + 66, 134, 18)) {
-        sysinfo_create();
-    }
-    
-    g_desktop.start_menu_open = 0;
-    desktop_set_dirty();
-}
-
-static int desktop_handle_taskbar_click(sint32 x, sint32 y) {
-    sint32 button_x = 74;
-    
-    if (!point_in_rect(x, y, 0, SCREEN_HEIGHT - TASKBAR_HEIGHT, SCREEN_WIDTH, TASKBAR_HEIGHT)) {
-        return 0;
-    }
-    
-    for (uint32 i = 0; i < g_desktop.window_count; i++) {
-        if (point_in_rect(x, y, button_x, SCREEN_HEIGHT - TASKBAR_HEIGHT + 2, TASKBAR_BUTTON_W, 15)) {
-            desktop_focus_window(g_desktop.windows[i].id);
-            return 1;
-        }
-        button_x += TASKBAR_BUTTON_W + TASKBAR_BUTTON_SPACING;
-    }
-    
-    return 0;
-}
-
-static void desktop_begin_window_interaction(window_t* w, desktop_hit_region_t hit, sint32 x, sint32 y) {
-    if (!w) return;
-    
-    g_desktop.active_window = w->id;
-    g_desktop.active_hit = hit;
-    g_desktop.drag_offset_x = x - (sint32)w->x;
-    g_desktop.drag_offset_y = y - (sint32)w->y;
-    g_desktop.resize_origin_width = w->width;
-    g_desktop.resize_origin_height = w->height;
-}
-
-static void desktop_continue_window_interaction(sint32 x, sint32 y, uint8 buttons) {
-    window_t* w = desktop_find_window_by_id(g_desktop.active_window);
-    if (!w || !(buttons & 0x01)) return;
-    
-    if (g_desktop.active_hit == DESKTOP_HIT_TITLEBAR && (w->flags & WINDOW_FLAG_DRAGGABLE)) {
-        desktop_move_window(w, x - g_desktop.drag_offset_x, y - g_desktop.drag_offset_y);
-        desktop_set_dirty();
-    } else if (g_desktop.active_hit == DESKTOP_HIT_RESIZE && (w->flags & WINDOW_FLAG_RESIZABLE)) {
-        uint32 new_width = (uint32)(x - (sint32)w->x + 4);
-        uint32 new_height = (uint32)(y - (sint32)w->y + 4);
-        desktop_resize_window(w, new_width, new_height);
-        desktop_set_dirty();
-    }
-}
-
 void desktop_handle_mouse(int x, int y, uint8 buttons) {
-    static uint8 last_buttons = 0;
-    
-    if ((buttons & 0x01) && g_desktop.active_window != 0) {
-        desktop_continue_window_interaction((sint32)x, (sint32)y, buttons);
-    }
-    
-    if ((buttons & 0x01) && !(last_buttons & 0x01)) {
-        // Start button click
-        if (point_in_rect((sint32)x, (sint32)y, 8, SCREEN_HEIGHT - TASKBAR_HEIGHT + 3, START_BUTTON_W, START_BUTTON_H)) {
-            g_desktop.start_menu_open = !g_desktop.start_menu_open;
-            desktop_set_dirty();
-            last_buttons = buttons;
-            return;
-        }
-        
-        if (g_desktop.start_menu_open) {
-            desktop_handle_menu_click((sint32)x, (sint32)y);
-            last_buttons = buttons;
-            return;
-        }
-        
-        if (desktop_handle_taskbar_click((sint32)x, (sint32)y)) {
-            last_buttons = buttons;
-            return;
-        }
-        
-        // Window interactions
-        for (sint32 i = (sint32)g_desktop.window_count - 1; i >= 0; i--) {
-            window_t* w = &g_desktop.windows[i];
-            desktop_hit_region_t hit = desktop_hit_test_window(w, (sint32)x, (sint32)y);
-            if (hit == DESKTOP_HIT_NONE) continue;
-            
-            if (hit == DESKTOP_HIT_CLOSE) {
-                desktop_close_window(w->id);
-                last_buttons = buttons;
-                return;
-            }
-            
-            desktop_focus_window(w->id);
-            w = desktop_get_focused();
-            
-            if (hit == DESKTOP_HIT_MAXIMIZE) {
-                desktop_toggle_maximize(w);
-                desktop_set_dirty();
-                last_buttons = buttons;
-                return;
-            }
-            
-            desktop_begin_window_interaction(w, hit, (sint32)x, (sint32)y);
-            
-            if (hit == DESKTOP_HIT_CLIENT && w && w->handle_mouse) {
-                rect_t content;
-                desktop_get_window_content_rect(w, &content);
-                w->handle_mouse(w, (sint32)x - content.x, (sint32)y - content.y, buttons);
-            }
-            
-            last_buttons = buttons;
-            return;
-        }
-    }
-    
-    if (!(buttons & 0x01) && (last_buttons & 0x01)) {
-        g_desktop.active_window = 0;
-        g_desktop.active_hit = DESKTOP_HIT_NONE;
-    }
-    
-    last_buttons = buttons;
+    (void)x;
+    (void)y;
+    (void)buttons;
 }
 
 void desktop_handle_key(char key) {
