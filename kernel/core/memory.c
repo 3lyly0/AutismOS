@@ -35,9 +35,6 @@ static uint32_t memory_end = 0;
 static uint8_t memory_initialized = 0;
 static uint8_t paging_initialized = 0;
 
-static void *heap_current = NULL;
-static void *heap_end = NULL;
-
 
 void multiboot_parse_memory_map(multiboot_info_t *mbi) {
     if (!(mbi->flags & (1 << 6))) {
@@ -200,6 +197,8 @@ page_directory_t* get_kernel_page_directory(void) {
 // Create a new page directory for a process
 page_directory_t* create_page_directory(void) {
     // Allocate page directory structure
+    // Note: kmalloc is provided by kheap.c
+    extern void* kmalloc(size_t size);
     page_directory_t* dir = (page_directory_t*)kmalloc(sizeof(page_directory_t));
     if (!dir) {
         debug_print("ERROR: Failed to allocate page directory\n");
@@ -273,6 +272,8 @@ void map_page_in_directory(page_directory_t* dir, uint32_t virt_addr, uint32_t p
         }
         
         // Allocate a new page table
+        // Note: kmalloc is provided by kheap.c
+        extern void* kmalloc(size_t size);
         uint32_t* new_table = (uint32_t*)kmalloc(PAGE_TABLE_SIZE * sizeof(uint32_t));
         if (!new_table) {
             kernel_panic("Failed to allocate page table");
@@ -288,61 +289,14 @@ void map_page_in_directory(page_directory_t* dir, uint32_t virt_addr, uint32_t p
     dir->tables[dir_index][table_index] = phys_addr | flags;
 }
 
-void *kmalloc(size_t size) {
-    if (!memory_initialized) {
-        debug_print("ERROR: kmalloc called before memory initialization\n");
-        return NULL;
-    }
-    
-    if (size == 0) {
-        debug_print("WARNING: kmalloc called with size 0\n");
-        return NULL;
-    }
-    
-    size_t aligned_size = (size + 15) & ~15;
-    
-    if (heap_current == NULL) {
-        uint32_t kernel_end = (uint32_t)&__kernel_section_end;
-        heap_current = (void *)((kernel_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1));
-        heap_end = (void *)(memory_end > MEMORY_SIZE ? MEMORY_SIZE : memory_end);
-        
-        if (heap_current >= heap_end) {
-            debug_print("ERROR: Heap initialization failed - no space after kernel\n");
-            return NULL;
-        }
-        
-        debug_print("Heap initialized at 0x");
-        debug_print_hex((uint32_t)heap_current);
-        debug_print("\n");
-    }
-    
-    // Check if allocation would exceed heap bounds BEFORE modifying heap_current
-    void *next_heap = (void *)((uint32_t)heap_current + aligned_size);
-    if (next_heap > heap_end) {
-        debug_print("ERROR: kmalloc OOM - heap exhausted\n");
-        return NULL;
-    }
-    
-    void *result = heap_current;
-    
-    // Debug: Show allocation
-    if (size > 256) {  // Only log larger allocations
-        debug_print("kmalloc(");
-        debug_print_hex(size);
-        debug_print(") -> 0x");
-        debug_print_hex((uint32_t)result);
-        debug_print(" (heap: 0x");
-        debug_print_hex((uint32_t)heap_current);
-        debug_print(")\n");
-    }
-    
-    heap_current = next_heap;
-    
-    return result;
+// Get the detected memory end address
+uint32_t memory_get_end(void) {
+    return memory_end;
 }
 
-void kfree(void *ptr) {
-    (void)ptr;
+// Check if memory is initialized
+int memory_is_initialized(void) {
+    return memory_initialized;
 }
 
 void memory_init(multiboot_info_t *mbi) {
