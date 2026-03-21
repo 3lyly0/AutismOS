@@ -48,6 +48,24 @@ static uint32 next_window_id = 1;
 static volatile uint8 g_desktop_mode = 0;
 
 // ============================================================================
+// Forward Declarations
+// ============================================================================
+
+static void desktop_cycle_focus(void);
+static void desktop_close_focused(void);
+static void desktop_toggle_launcher(void);
+static void desktop_bring_to_front(uint32 index);
+static void desktop_set_dirty(void);
+static void desktop_focus_window(uint32 window_id);
+static void desktop_close_window(uint32 window_id);
+static window_t* desktop_get_focused(void);
+static void desktop_move_window(window_t* w, sint32 x, sint32 y);
+static void desktop_resize_window(window_t* w, uint32 width, uint32 height);
+static void desktop_toggle_maximize(window_t* w);
+static void desktop_get_window_content_rect(const window_t* w, rect_t* rect);
+static desktop_hit_region_t desktop_hit_test_window(const window_t* w, sint32 x, sint32 y);
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -70,6 +88,55 @@ static void desktop_get_workspace_rect(rect_t* rect) {
     rect->y = 0;
     rect->width = SCREEN_WIDTH;
     rect->height = SCREEN_HEIGHT - TASKBAR_HEIGHT;
+}
+
+// ============================================================================
+// App Launchers
+// ============================================================================
+
+static void desktop_launch_notepad(void) { notepad_create(); }
+static void desktop_launch_calculator(void) { calculator_create(); }
+static void desktop_launch_sysinfo(void) { sysinfo_create(); }
+
+static void desktop_cycle_focus(void) {
+    if (g_desktop.window_count == 0) return;
+    
+    if (g_desktop.focused_window == 0) {
+        desktop_focus_window(g_desktop.windows[g_desktop.window_count - 1].id);
+        return;
+    }
+    
+    for (uint32 i = 0; i < g_desktop.window_count; i++) {
+        if (g_desktop.windows[i].id == g_desktop.focused_window) {
+            if (i == 0) {
+                desktop_focus_window(g_desktop.windows[g_desktop.window_count - 1].id);
+            } else {
+                desktop_focus_window(g_desktop.windows[i - 1].id);
+            }
+            return;
+        }
+    }
+}
+
+static void desktop_close_focused(void) {
+    if (g_desktop.focused_window != 0) {
+        desktop_close_window(g_desktop.focused_window);
+    }
+}
+
+static void desktop_toggle_launcher(void) {
+    g_desktop.start_menu_open = !g_desktop.start_menu_open;
+    desktop_set_dirty();
+}
+
+static void desktop_bring_to_front(uint32 index) {
+    if (index >= g_desktop.window_count || index == g_desktop.window_count - 1) return;
+    
+    window_t moved = g_desktop.windows[index];
+    for (uint32 i = index; i + 1 < g_desktop.window_count; i++) {
+        g_desktop.windows[i] = g_desktop.windows[i + 1];
+    }
+    g_desktop.windows[g_desktop.window_count - 1] = moved;
 }
 
 // ============================================================================
@@ -239,55 +306,6 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
         default:
             break;
     }
-}
-
-// ============================================================================
-// App Launchers
-// ============================================================================
-
-static void desktop_launch_notepad(void) { notepad_create(); }
-static void desktop_launch_calculator(void) { calculator_create(); }
-static void desktop_launch_sysinfo(void) { sysinfo_create(); }
-
-static void desktop_cycle_focus(void) {
-    if (g_desktop.window_count == 0) return;
-    
-    if (g_desktop.focused_window == 0) {
-        desktop_focus_window(g_desktop.windows[g_desktop.window_count - 1].id);
-        return;
-    }
-    
-    for (uint32 i = 0; i < g_desktop.window_count; i++) {
-        if (g_desktop.windows[i].id == g_desktop.focused_window) {
-            if (i == 0) {
-                desktop_focus_window(g_desktop.windows[g_desktop.window_count - 1].id);
-            } else {
-                desktop_focus_window(g_desktop.windows[i - 1].id);
-            }
-            return;
-        }
-    }
-}
-
-static void desktop_close_focused(void) {
-    if (g_desktop.focused_window != 0) {
-        desktop_close_window(g_desktop.focused_window);
-    }
-}
-
-static void desktop_toggle_launcher(void) {
-    g_desktop.start_menu_open = !g_desktop.start_menu_open;
-    desktop_set_dirty();
-}
-
-static void desktop_bring_to_front(uint32 index) {
-    if (index >= g_desktop.window_count || index == g_desktop.window_count - 1) return;
-    
-    window_t moved = g_desktop.windows[index];
-    for (uint32 i = index; i + 1 < g_desktop.window_count; i++) {
-        g_desktop.windows[i] = g_desktop.windows[i + 1];
-    }
-    g_desktop.windows[g_desktop.window_count - 1] = moved;
 }
 
 // ============================================================================
