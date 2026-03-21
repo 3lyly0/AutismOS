@@ -20,12 +20,15 @@ static int gfx_send_request(gfx_message_t* msg, gfx_response_t* resp) {
     message_t ipc_msg;
     ipc_msg.type = msg->type;
     ipc_msg.sender_pid = process_get_current()->pid;
-    memcpy(ipc_msg.data, &msg->data, sizeof(msg->data));
+    /* Copy data (only data1 and data2 available in message_t) */
+    memcpy(&ipc_msg.data1, &msg->data, sizeof(uint32_t) * 2);
     
-    int result = message_queue_enqueue(
-        &process_find_by_pid(g_gfx_client.server_pid)->inbox, 
-        &ipc_msg
-    );
+    process_t* server = process_find_by_pid(g_gfx_client.server_pid);
+    if (!server) {
+        return GFX_ERR_NO_SERVER;
+    }
+    
+    int result = message_queue_enqueue(&server->inbox, &ipc_msg);
     
     if (result != 0) {
         return GFX_ERR_TIMEOUT;
@@ -43,7 +46,7 @@ static int gfx_send_request(gfx_message_t* msg, gfx_response_t* resp) {
 int gfx_connect(void) {
     /* In a real system, we'd find the server by name */
     /* For now, assume server PID is 1 */
-    g_gfx_client.server_pid = 1;  /* Graphics server PID */
+    g_gfx_client.server_pid = 1;
     g_gfx_client.connected = 1;
     g_gfx_client.next_window_id = 1;
     
@@ -63,13 +66,12 @@ uint32_t gfx_create_window(int32_t x, int32_t y, uint32_t width, uint32_t height
     
     gfx_message_t msg;
     msg.type = GFX_MSG_CREATE_WINDOW;
-    msg.data.create.window_id = 0;  /* Server will assign */
     msg.data.create.x = x;
     msg.data.create.y = y;
     msg.data.create.width = width;
     msg.data.create.height = height;
     msg.data.create.flags = flags;
-    msg.data.create.buffer_size = width * height;  /* 8-bit pixels */
+    msg.data.create.buffer_size = width * height;
     
     if (title) {
         strncpy(msg.data.create.title, title, sizeof(msg.data.create.title) - 1);
@@ -108,7 +110,7 @@ int gfx_clear(uint32_t window_id, uint8_t color) {
     msg.data.rect.window_id = window_id;
     msg.data.rect.x = 0;
     msg.data.rect.y = 0;
-    msg.data.rect.width = 0;  /* Full window */
+    msg.data.rect.width = 0;
     msg.data.rect.height = 0;
     msg.data.rect.color = color;
     
@@ -116,7 +118,7 @@ int gfx_clear(uint32_t window_id, uint8_t color) {
     return gfx_send_request(&msg, &resp);
 }
 
-int gfx_draw_rect(uint32_t window_id, int32_t x, int32_t y,
+int gfx_draw_rect(uint32_t window_id, int32_t x, int32_t y, 
                   uint32_t w, uint32_t h, uint8_t color) {
     if (!g_gfx_client.connected || window_id == 0) {
         return GFX_ERR_INVALID_WINDOW;

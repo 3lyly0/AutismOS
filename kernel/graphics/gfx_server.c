@@ -342,7 +342,10 @@ void gfx_server_run(void) {
                 /* Convert IPC message to GFX message */
                 msg.type = ipc_msg.type;
                 msg.sender_pid = ipc_msg.sender_pid;
-                memcpy(&msg.data, ipc_msg.data, sizeof(msg.data));
+                /* Copy data from IPC message (data1 and data2) */
+                memset(&msg.data, 0, sizeof(msg.data));
+                memcpy(&msg.data.raw[0], &ipc_msg.data1, sizeof(uint32_t));
+                memcpy(&msg.data.raw[4], &ipc_msg.data2, sizeof(uint32_t));
                 
                 /* Process the message */
                 process_message(&msg, &resp);
