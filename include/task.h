@@ -20,6 +20,7 @@ typedef struct task {
     task_state_t state;
     void* process;    // Pointer to parent process (opaque to avoid circular dependency)
     struct task* next; // Next task in circular list
+    void* sched_data; // Scheduler-private data (pointer to sched_task_t)
 } task_t;
 
 // Task management functions
