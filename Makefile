@@ -35,7 +35,7 @@ OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/input.o\
 		$(BUILD)/rtl8139.o $(BUILD)/ethernet.o $(BUILD)/arp.o $(BUILD)/ip.o $(BUILD)/icmp.o $(BUILD)/tcp.o\
 		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/desktop.o $(BUILD)/kernel.o\
-		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/boot_animation.o $(BUILD)/disk.o $(BUILD)/sound.o\
+		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/boot_animation.o $(BUILD)/disk.o $(BUILD)/sound.o $(BUILD)/timer.o\
 		$(BUILD)/gfx_server.o $(BUILD)/libgfx.o\
 		$(BUILD)/widget.o $(BUILD)/theme.o
 
@@ -194,6 +194,10 @@ $(BUILD)/disk.o : $(DRIVERS)/storage/disk.c
 # Audio drivers
 $(BUILD)/sound.o : $(DRIVERS)/audio/sound.c
 	$(CC) $(CC_FLAGS) -c $(DRIVERS)/audio/sound.c -o $(BUILD)/sound.o
+
+# Timer driver
+$(BUILD)/timer.o : $(DRIVERS)/timer.c
+	$(CC) $(CC_FLAGS) -c $(DRIVERS)/timer.c -o $(BUILD)/timer.o
 
 # Network drivers
 $(BUILD)/rtl8139.o : $(DRIVERS)/network/rtl8139.c

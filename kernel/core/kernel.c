@@ -8,6 +8,7 @@
 #include "video.h"
 #include "keyboard.h"
 #include "sound.h"
+#include "timer.h"
 #include "task.h"
 #include "process.h"
 #include "syscall.h"
@@ -60,6 +61,7 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
         IRQ_BASE + IRQ0_TIMER,
         timer_interrupt_handler
     );
+    timer_init(1000);
 
     if (magic != MULTIBOOT_MAGIC)
         kernel_panic("Invalid multiboot magic");
@@ -96,10 +98,9 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
     desktop_init();
     desktop_activate();
 
+    asm volatile("sti");
     beep();
     ux_finish_boot();
-
-    asm volatile("sti");
 
     // Run desktop in main loop
     // Input is handled via input_manager listeners, just need to draw

@@ -1,7 +1,9 @@
 #include "sound.h"
 #include "io_ports.h"
+#include "timer.h"
 
 void play_sound(uint32_t frequency) {
+    if (frequency == 0) return;
     uint32_t div = 1193180 / frequency;
     outportb(0x43, 0xB6);
     outportb(0x42, (uint8_t)(div & 0xFF));
@@ -13,13 +15,13 @@ void play_sound(uint32_t frequency) {
     }
 }
 
-void stop_sound() {
+void stop_sound(void) {
     uint8_t tmp = inportb(0x61) & 0xFC;
     outportb(0x61, tmp);
 }
 
-void beep() {
+void beep(void) {
     play_sound(1000);
-    for (volatile int i = 0; i < 1000000000; i++);
+    sleep_ms(150);
     stop_sound();
 }
