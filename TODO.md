@@ -86,41 +86,41 @@
 > Build them in order — each one builds on the previous.
 
 ### 2.1 — PIT Timer Driver
-- [ ] Program the Programmable Interval Timer (PIT) — Channel 0, ~1000 Hz (1ms tick).
-- [ ] Create `drivers/timer.c` and `include/timer.h`.
-- [ ] Register IRQ0 handler.
-- [ ] Implement a global tick counter (`timer_get_ticks()`).
-- [ ] Implement `sleep_ms(uint32 ms)` using the tick counter.
-- [ ] Replace the busy-wait loop in `drivers/sound.c` with `sleep_ms()`.
+- [x] Program the Programmable Interval Timer (PIT) — Channel 0, ~1000 Hz (1ms tick).
+- [x] Create `drivers/timer.c` and `include/timer.h`.
+- [x] Register IRQ0 handler.
+- [x] Implement a global tick counter (`timer_get_ticks()`).
+- [x] Implement `sleep_ms(uint32 ms)` using the tick counter.
+- [x] Replace the busy-wait loop in `drivers/sound.c` with `sleep_ms()`.
 
 > **Why first?** Accurate timing is needed for everything: sleep, scheduling, disk timeouts, etc.
 
 ### 2.2 — Heap Memory Allocator (malloc/free)
-- [ ] Create `kernel/heap.c` and `include/heap.h`.
-- [ ] Implement a simple block allocator on top of the existing page allocator.
-- [ ] Functions: `void* kmalloc(size_t size)`, `void kfree(void* ptr)`.
-- [ ] Add `void* kcalloc(size_t count, size_t size)` — allocate and zero.
-- [ ] Add `void* krealloc(void* ptr, size_t new_size)` — resize allocation.
-- [ ] Test: allocate, use, and free memory blocks of various sizes.
+- [x] Create `kernel/heap.c` and `include/heap.h` (implemented via `kernel/core/kheap.c` and `include/kheap.h`).
+- [x] Implement a simple block allocator on top of the existing page allocator.
+- [x] Functions: `void* kmalloc(size_t size)`, `void kfree(void* ptr)`.
+- [x] Add `void* kcalloc(size_t count, size_t size)` — allocate and zero.
+- [x] Add `void* krealloc(void* ptr, size_t new_size)` — resize allocation.
+- [x] Test: allocate, use, and free memory blocks of various sizes.
 
 > **Why second?** Dynamic memory allocation is required for buffers, strings, data structures, and almost everything that follows.
 
 ### 2.3 — Paging & Virtual Memory
-- [ ] Create `kernel/paging.c` and `include/paging.h`.
-- [ ] Set up a page directory and page tables (identity-map first 16MB).
-- [ ] Enable paging via CR0/CR3.
-- [ ] Implement page fault handler (ISR 14).
-- [ ] Map kernel space as supervisor-only (ring 0).
-- [ ] Add functions: `map_page()`, `unmap_page()`, `get_physical_addr()`.
+- [x] Create `kernel/paging.c` and `include/paging.h` (implemented via `kernel/core/memory.c` and `kernel/core/vmm.c`).
+- [x] Set up a page directory and page tables (identity-map first 16MB).
+- [x] Enable paging via CR0/CR3.
+- [x] Implement page fault handler (ISR 14).
+- [x] Map kernel space as supervisor-only (ring 0).
+- [x] Add functions: `map_page()`, `unmap_page()`, `get_physical_addr()`.
 
 > **Why third?** Paging provides memory protection — prevents user code from overwriting the kernel.
 
 ### 2.4 — Input System Overhaul
-- [ ] Create a proper keyboard input buffer (ring buffer, ~256 bytes).
-- [ ] Support reading a full line of input (with backspace, enter).
-- [ ] Add arrow key support (Left, Right for cursor movement within input).
-- [ ] Add Ctrl+C handling (cancel current input).
-- [ ] Create `char* readline(const char* prompt)` — print prompt, read a line, return it.
+- [x] Create a proper keyboard input buffer (ring buffer, ~256 bytes).
+- [x] Support reading a full line of input (with backspace, enter).
+- [x] Add arrow key support (Left, Right for cursor movement within input).
+- [x] Add Ctrl+C handling (cancel current input).
+- [x] Create `char* readline(const char* prompt)` — print prompt, read a line, return it.
 
 > **Why fourth?** The shell (Phase 3) needs proper line-based input, not single-character echo.
 
