@@ -1,21 +1,11 @@
-MEMINFO     equ  1<<0
-BOOTDEVICE  equ  1<<1
-CMDLINE     equ  1<<2
-MODULECOUNT equ  1<<3
-SYMT        equ  48 ; bits 4 & 5
-MEMMAP      equ  1<<6
-DRIVE       equ  1<<7
-CONFIGT     equ  1<<8
-BOOTLDNAME  equ  1<<9
-APMT        equ  1<<10
-VIDEO       equ  1<<11
-VIDEO_FRAMEBUF equ  1<<12
-FLAGS       equ  MEMINFO | BOOTDEVICE | CMDLINE | MODULECOUNT | SYMT | MEMMAP | DRIVE | CONFIGT | BOOTLDNAME | VIDEO_FRAMEBUF
-MAGIC_HEADER       equ  0x1BADB002
-CHECKSUM    equ -(MAGIC_HEADER + FLAGS)
+; Multiboot 1 specification
+MULTIBOOT_PAGE_ALIGN    equ 1 << 0   ; Align all boot modules on i386 page (4KB) boundaries
+MULTIBOOT_MEMORY_INFO   equ 1 << 1   ; Must provide memory information
+FLAGS                   equ MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO
+MAGIC_HEADER            equ 0x1BADB002
+CHECKSUM                equ -(MAGIC_HEADER + FLAGS)
 
-BOOTLOADER_MAGIC  equ  0x2BADB002
-
+BOOTLOADER_MAGIC        equ 0x2BADB002
 
 section .multiboot
     align 4
