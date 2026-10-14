@@ -1,9 +1,7 @@
 #include "graphics.h"
 #include "string.h"
 #include "video.h"
-#include "notepad.h"
-#include "calculator.h"
-#include "sysinfo.h"
+#include "desktop.h"
 #include "input_manager.h"
 #include "theme.h"
 #include "widget.h"
@@ -54,9 +52,6 @@ static void desktop_cycle_focus(void);
 static void desktop_close_focused(void);
 static void desktop_toggle_launcher(void);
 static void desktop_bring_to_front(uint32 index);
-static void desktop_launch_notepad(void);
-static void desktop_launch_calculator(void);
-static void desktop_launch_sysinfo(void);
 static void desktop_draw_wallpaper(void);
 static void desktop_draw_taskbar(void);
 static void desktop_draw_menu(void);
@@ -94,14 +89,6 @@ static void desktop_get_workspace_rect(rect_t* rect) {
     rect->width = SCREEN_WIDTH;
     rect->height = SCREEN_HEIGHT - TASKBAR_HEIGHT;
 }
-
-// ============================================================================
-// App Launchers
-// ============================================================================
-
-static void desktop_launch_notepad(void) { notepad_create(); }
-static void desktop_launch_calculator(void) { calculator_create(); }
-static void desktop_launch_sysinfo(void) { sysinfo_create(); }
 
 static void desktop_cycle_focus(void) {
     if (g_desktop.window_count == 0) return;
@@ -194,17 +181,7 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
                 }
                 
                 if (g_desktop.start_menu_open) {
-                    sint32 menu_y = SCREEN_HEIGHT - TASKBAR_HEIGHT - START_MENU_H;
-                    if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, 18, menu_y + 24, 134, 18)) {
-                        notepad_create();
-                        g_desktop.start_menu_open = 0;
-                    } else if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, 18, menu_y + 45, 134, 18)) {
-                        calculator_create();
-                        g_desktop.start_menu_open = 0;
-                    } else if (point_in_rect(g_desktop.mouse_x, g_desktop.mouse_y, 18, menu_y + 66, 134, 18)) {
-                        sysinfo_create();
-                        g_desktop.start_menu_open = 0;
-                    }
+                    g_desktop.start_menu_open = 0;
                     desktop_set_dirty();
                     return;
                 }
@@ -274,18 +251,6 @@ static void desktop_input_handler(const input_event_t* event, void* user_data) {
                     desktop_set_dirty();
                     return;
                 }
-            } else if (event->data.key.keycode == KEY_F1) {
-                notepad_create();
-                desktop_set_dirty();
-                return;
-            } else if (event->data.key.keycode == KEY_F2) {
-                calculator_create();
-                desktop_set_dirty();
-                return;
-            } else if (event->data.key.keycode == KEY_F3) {
-                sysinfo_create();
-                desktop_set_dirty();
-                return;
             } else if (event->data.key.keycode == KEY_TAB && event->data.key.ctrl) {
                 desktop_cycle_focus();
                 desktop_set_dirty();
@@ -390,26 +355,14 @@ static void desktop_draw_menu(void) {
     draw_rect(menu_x, menu_y, START_MENU_W, START_MENU_H, menu_border);
     
     draw_filled_rect(menu_x, menu_y, START_MENU_W, 18, header_bg);
-    draw_text(menu_x + 8, menu_y + 6, "Launch apps", text_color);
+    draw_text(menu_x + 8, menu_y + 6, "AutismOS", text_color);
     
     sint32 item_y = menu_y + 24;
-    
-    draw_filled_rect(menu_x + 10, item_y, 134, 18, theme_color(THEME_ACCENT_PRIMARY));
-    draw_rect(menu_x + 10, item_y, 134, 18, menu_border);
-    draw_text(menu_x + 16, item_y + 4, "Notepad", text_color);
-    draw_text(menu_x + 82, item_y + 4, "press 1", theme_color(THEME_FG_SECONDARY));
-    item_y += 21;
-    
-    draw_filled_rect(menu_x + 10, item_y, 134, 18, COLOR_GREEN);
-    draw_rect(menu_x + 10, item_y, 134, 18, menu_border);
-    draw_text(menu_x + 16, item_y + 4, "Calculator", text_color);
-    draw_text(menu_x + 82, item_y + 4, "press 2", theme_color(THEME_FG_SECONDARY));
-    item_y += 21;
-    
-    draw_filled_rect(menu_x + 10, item_y, 134, 18, COLOR_CYAN);
-    draw_rect(menu_x + 10, item_y, 134, 18, menu_border);
-    draw_text(menu_x + 16, item_y + 4, "System Info", text_color);
-    draw_text(menu_x + 82, item_y + 4, "press 3", theme_color(THEME_FG_SECONDARY));
+    draw_text(menu_x + 12, item_y + 2, "Status: Online", text_color);
+    item_y += 18;
+    draw_text(menu_x + 12, item_y + 2, "Mode: Protected (Ring 0)", theme_color(THEME_FG_SECONDARY));
+    item_y += 18;
+    draw_text(menu_x + 12, item_y + 2, "Press ESC to close", theme_color(THEME_FG_SECONDARY));
 }
 
 static void desktop_draw_resize_grip(const window_t* w) {
@@ -753,24 +706,6 @@ void desktop_handle_mouse(int x, int y, uint8 buttons) {
 
 void desktop_handle_key(char key) {
     if (g_desktop.start_menu_open) {
-        if (key == '1') {
-            notepad_create();
-            g_desktop.start_menu_open = 0;
-            desktop_set_dirty();
-            return;
-        }
-        if (key == '2') {
-            calculator_create();
-            g_desktop.start_menu_open = 0;
-            desktop_set_dirty();
-            return;
-        }
-        if (key == '3') {
-            sysinfo_create();
-            g_desktop.start_menu_open = 0;
-            desktop_set_dirty();
-            return;
-        }
         if (key == 27) {
             g_desktop.start_menu_open = 0;
             desktop_set_dirty();
@@ -778,34 +713,8 @@ void desktop_handle_key(char key) {
         }
     }
     
-    if (key == (char)0x80 || key == 27 || key == '`' || key == 20) {
+    if (key == (char)0x80 || key == 27) {
         desktop_toggle_launcher();
-        return;
-    }
-    
-    if (key == (char)0x83 || key == '1') {
-        desktop_launch_notepad();
-        desktop_set_dirty();
-        return;
-    }
-    
-    if (key == (char)0x84 || key == '2') {
-        desktop_launch_calculator();
-        desktop_set_dirty();
-        return;
-    }
-    
-    if (key == (char)0x85 || key == '3') {
-        desktop_launch_sysinfo();
-        desktop_set_dirty();
-        return;
-    }
-    
-    if (key == (char)0x86 || key == 14) {
-        desktop_launch_notepad();
-        desktop_launch_calculator();
-        desktop_launch_sysinfo();
-        desktop_set_dirty();
         return;
     }
     
@@ -815,34 +724,9 @@ void desktop_handle_key(char key) {
         return;
     }
     
-    if (key == 23 || key == (char)0x81) {
+    if (key == (char)0x81) {
         desktop_close_focused();
         return;
-    }
-    
-    if (key == 13 || key == (char)0x87) {
-        window_t* focused_for_max = desktop_get_focused();
-        if (focused_for_max) {
-            desktop_toggle_maximize(focused_for_max);
-            desktop_set_dirty();
-        }
-        return;
-    }
-    
-    if (key == 18 || key == (char)0x82) {
-        window_t* focused_for_raise = desktop_get_focused();
-        if (focused_for_raise) {
-            desktop_focus_window(focused_for_raise->id);
-            desktop_set_dirty();
-        }
-        return;
-    }
-    
-    if (key == 17) {
-        asm volatile("cli");
-        for (;;) {
-            asm volatile("hlt");
-        }
     }
     
     window_t* focused = desktop_get_focused();

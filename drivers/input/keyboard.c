@@ -200,17 +200,7 @@ void keyboard_handler(REGISTERS *r __attribute__((unused))) {
                 
                 // Global hotkeys remain available regardless of the active shell.
                 if (g_alt_pressed && g_ch != 0) {
-                    if (is_desktop_mode()) {
-                        if (g_ch == '1') desktop_handle_key(KEY_F1);
-                        else if (g_ch == '2') desktop_handle_key(KEY_F2);
-                        else if (g_ch == '3') desktop_handle_key(KEY_F3);
-                        else if (g_ch == '4') desktop_handle_key(KEY_F4);
-                        else if (g_ch == 'm' || g_ch == 'M') desktop_handle_key(13);
-                        else if (g_ch == 'x' || g_ch == 'X') desktop_handle_key(KEY_F10);
-                        else ux_handle_hotkey(g_ch);
-                    } else {
-                        ux_handle_hotkey(g_ch);
-                    }
+                    ux_handle_hotkey(g_ch);
                 }
                 else if (is_desktop_mode() && g_ch != 0) {
                     desktop_handle_key(g_ch);

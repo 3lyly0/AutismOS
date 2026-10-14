@@ -4,19 +4,17 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "multiboot.h"
+#include "kheap.h"
 
 // Page directory type (opaque pointer)
 typedef struct page_directory page_directory_t;
 
 void memory_init(multiboot_info_t *mbi);
-void *allocate_page();
+void *allocate_page(void);
 void free_page(void *ptr);
 
-void paging_init();
-void paging_enable();
-
-// kmalloc/kfree are now provided by kheap.h/kheap.c
-// Include kheap.h if you need heap allocation functions
+void paging_init(void);
+void paging_enable(void);
 
 // Page directory management for processes
 page_directory_t* create_page_directory(void);

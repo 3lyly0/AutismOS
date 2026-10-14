@@ -28,30 +28,29 @@ TARGET_ISO=autismos.iso
 ISO_DIR=isodir
 
 
-APPS = apps
-
 OBJECTS=$(BUILD)/bootloader.o $(BUILD)/load_gdt.o\
 		$(BUILD)/load_idt.o $(BUILD)/exception.o $(BUILD)/irq.o $(BUILD)/syscall.o $(BUILD)/user_program_asm.o\
 		$(BUILD)/io_ports.o $(BUILD)/string.o $(BUILD)/gdt.o $(BUILD)/idt.o $(BUILD)/isr.o $(BUILD)/8259_pic.o $(BUILD)/pci.o\
-$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/mouse_smooth.o $(BUILD)/input_manager.o $(BUILD)/memory.o $(BUILD)/kheap.o $(BUILD)/pmm.o $(BUILD)/vmm.o $(BUILD)/scheduler.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
-		$(BUILD)/input.o $(BUILD)/network.o $(BUILD)/html.o $(BUILD)/layout.o\
+		$(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/mouse_smooth.o $(BUILD)/input_manager.o $(BUILD)/memory.o $(BUILD)/kheap.o $(BUILD)/pmm.o $(BUILD)/vmm.o $(BUILD)/scheduler.o $(BUILD)/task.o $(BUILD)/process.o $(BUILD)/ipc.o $(BUILD)/shm.o\
+		$(BUILD)/input.o\
 		$(BUILD)/rtl8139.o $(BUILD)/ethernet.o $(BUILD)/arp.o $(BUILD)/ip.o $(BUILD)/icmp.o $(BUILD)/tcp.o\
 		$(BUILD)/syscall_c.o $(BUILD)/usermode.o $(BUILD)/ux.o $(BUILD)/desktop.o $(BUILD)/kernel.o\
-$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/boot_animation.o $(BUILD)/disk.o $(BUILD)/sound.o\
-		$(BUILD)/gfx_server.o $(BUILD)/libgfx.o $(BUILD)/notepad.o $(BUILD)/calculator.o $(BUILD)/sysinfo.o\
+		$(BUILD)/video.o $(BUILD)/graphics.o $(BUILD)/ui.o $(BUILD)/boot_animation.o $(BUILD)/disk.o $(BUILD)/sound.o\
+		$(BUILD)/gfx_server.o $(BUILD)/libgfx.o\
 		$(BUILD)/widget.o $(BUILD)/theme.o
 
 
 all: $(BUILD) $(OBJECTS)
 	$(LD) $(LD_FLAGS) -o $(TARGET) $(OBJECTS)
-	grub-file --is-x86-multiboot $(TARGET)
+	-grub-file --is-x86-multiboot $(TARGET)
 	$(MKDIR) $(ISO_DIR)/boot/grub
 	$(CP) $(TARGET) $(ISO_DIR)/boot/
 	$(CP) $(BOOT)/grub.cfg $(ISO_DIR)/boot/grub/
-	$(GRUB) -o $(TARGET_ISO) $(ISO_DIR)
-	rm -rf $(TARGET) $(ISO_DIR)
-	rm -rf $(BUILD)
+	-$(GRUB) -o $(TARGET_ISO) $(ISO_DIR)
+	rm -rf $(ISO_DIR)
 
+clean:
+	rm -rf $(BUILD) $(ISO_DIR) $(TARGET) $(TARGET_ISO)
 
 $(BUILD):
 	$(MKDIR) $(BUILD)
@@ -149,15 +148,6 @@ $(BUILD)/ux.o : $(KERNEL)/ux/ux.c
 $(BUILD)/desktop.o : $(KERNEL)/ux/desktop.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/ux/desktop.c -o $(BUILD)/desktop.o
 
-# Kernel browser files
-$(BUILD)/network.o : $(KERNEL)/browser/network.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/network.c -o $(BUILD)/network.o
-
-$(BUILD)/html.o : $(KERNEL)/browser/html.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/html.c -o $(BUILD)/html.o
-
-$(BUILD)/layout.o : $(KERNEL)/browser/layout.c
-	$(CC) $(CC_FLAGS) -c $(KERNEL)/browser/layout.c -o $(BUILD)/layout.o
 
 
 
@@ -235,12 +225,3 @@ $(BUILD)/libgfx.o : $(LIB)/libgfx.c
 $(BUILD)/gfx_server.o : $(KERNEL)/graphics/gfx_server.c
 	$(CC) $(CC_FLAGS) -c $(KERNEL)/graphics/gfx_server.c -o $(BUILD)/gfx_server.o
 
-# Apps
-$(BUILD)/notepad.o : $(APPS)/notepad.c
-	$(CC) $(CC_FLAGS) -c $(APPS)/notepad.c -o $(BUILD)/notepad.o
-
-$(BUILD)/calculator.o : $(APPS)/calculator.c
-	$(CC) $(CC_FLAGS) -c $(APPS)/calculator.c -o $(BUILD)/calculator.o
-
-$(BUILD)/sysinfo.o : $(APPS)/sysinfo.c
-	$(CC) $(CC_FLAGS) -c $(APPS)/sysinfo.c -o $(BUILD)/sysinfo.o

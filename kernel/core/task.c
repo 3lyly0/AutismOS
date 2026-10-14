@@ -1,5 +1,6 @@
 #include "task.h"
 #include "memory.h"
+#include "kheap.h"
 #include "string.h"
 #include "kernel.h"
 #include "video.h"

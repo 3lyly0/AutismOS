@@ -16,12 +16,8 @@
 #include "input.h"
 #include "input_manager.h"
 #include "theme.h"
-#include "network.h"
-#include "html.h"
-#include "layout.h"
 #include "ux.h"
 #include "desktop.h"
-#include "notepad.h"
 #include "mouse.h"
 #include "mouse_smooth.h"
 
@@ -93,17 +89,12 @@ void kmain(uint32 magic, multiboot_info_t* mbi) {
     mouse_init();
     mouse_smooth_init();
     
-    network_init();
-    html_init();
-    layout_init();
-
     task_init();
     process_init();
 
-    // Initialize desktop (registers input listener)
+    // Initialize desktop
     desktop_init();
     desktop_activate();
-    notepad_create();
 
     beep();
     ux_finish_boot();
