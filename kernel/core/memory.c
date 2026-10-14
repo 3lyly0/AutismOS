@@ -317,6 +317,14 @@ void memory_init(multiboot_info_t *mbi) {
     for (uint32_t i = 0; i <= kernel_end_page; i++) {
         set_page_used(i);
     }
+
+    // Reserve 1MB (256 pages) for kernel heap immediately after kernel
+    uint32_t heap_start_page = kernel_end_page + 1;
+    uint32_t heap_page_count = 256;
+    for (uint32_t i = heap_start_page; i < heap_start_page + heap_page_count; i++) {
+        set_page_used(i);
+    }
+    kheap_init((void*)(heap_start_page * PAGE_SIZE), heap_page_count * PAGE_SIZE);
     
     debug_print("Memory initialized\n");
     debug_print("Kernel pages marked as used: ");
@@ -326,4 +334,30 @@ void memory_init(multiboot_info_t *mbi) {
     debug_print("\n");
     
     memory_initialized = 1;
+}
+
+void map_page(uint32_t virt_addr, uint32_t phys_addr, uint32_t flags) {
+    map_page_in_directory(&kernel_page_directory, virt_addr, phys_addr, flags);
+}
+
+void unmap_page(uint32_t virt_addr) {
+    uint32_t dir_index = virt_addr / (PAGE_SIZE * PAGE_TABLE_SIZE);
+    uint32_t table_index = (virt_addr / PAGE_SIZE) % PAGE_TABLE_SIZE;
+    if (kernel_page_directory.tables[dir_index]) {
+        kernel_page_directory.tables[dir_index][table_index] = 0;
+        asm volatile("invlpg (%0)" : : "r"(virt_addr) : "memory");
+    }
+}
+
+uint32_t get_physical_addr(uint32_t virt_addr) {
+    uint32_t dir_index = virt_addr / (PAGE_SIZE * PAGE_TABLE_SIZE);
+    uint32_t table_index = (virt_addr / PAGE_SIZE) % PAGE_TABLE_SIZE;
+    if (!kernel_page_directory.tables[dir_index]) {
+        return 0;
+    }
+    uint32_t entry = kernel_page_directory.tables[dir_index][table_index];
+    if (!(entry & PAGE_PRESENT)) {
+        return 0;
+    }
+    return (entry & 0xFFFFF000) | (virt_addr & 0xFFF);
 }
