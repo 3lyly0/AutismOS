@@ -42,7 +42,7 @@ char g_scan_code_chars[128] = {
 static int get_scancode() {
     int i, scancode = 0;
 
-    for (i = 1000; i > 0; i++) {
+    for (i = 1000; i > 0; i--) {
         if ((inportb(KEYBOARD_STATUS_PORT) & 1) == 0) continue;
         scancode = inportb(KEYBOARD_DATA_PORT);
         break;
