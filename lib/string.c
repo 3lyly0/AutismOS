@@ -20,14 +20,16 @@ void *memcpy(void *dst, const void *src, uint32 n) {
     return ret;
 }
 
-int memcmp(uint8 *s1, uint8 *s2, uint32 n) {
+int memcmp(const void *s1, const void *s2, uint32 n) {
+    const uint8 *p1 = (const uint8 *)s1;
+    const uint8 *p2 = (const uint8 *)s2;
     while (n--) {
-        if (*s1 != *s2)
-            return 0;
-        s1++;
-        s2++;
+        if (*p1 != *p2)
+            return (int)*p1 - (int)*p2;
+        p1++;
+        p2++;
     }
-    return 1;
+    return 0;
 }
 
 int strlen(const char *s) {
@@ -47,11 +49,10 @@ int strcmp(const char *s1, const char *s2) {
     return 1;
 }
 
-int strcpy(char *dst, const char *src) {
-    int i = 0;
-    while ((*dst++ = *src++) != 0)
-        i++;
-    return i;
+char *strcpy(char *dst, const char *src) {
+    char *orig = dst;
+    while ((*dst++ = *src++) != 0);
+    return orig;
 }
 
 void strcat(char *dest, const char *src) {

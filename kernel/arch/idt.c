@@ -11,7 +11,7 @@ void idt_set_entry(int index, uint32 base, uint16 seg_sel, uint8 flags) {
     this->base_low = base & 0xFFFF;
     this->segment_selector = seg_sel;
     this->zero = 0;
-    this->type = flags | 0x60;
+    this->type = flags;
     this->base_high = (base >> 16) & 0xFFFF;
 }
 

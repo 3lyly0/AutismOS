@@ -1,3 +1,4 @@
+#include "sound.h"
 #include "io_ports.h"
 
 void play_sound(uint32_t frequency) {

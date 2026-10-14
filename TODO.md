@@ -44,39 +44,39 @@
 > Clean up the codebase so it compiles warning-free and follows consistent conventions.
 
 ### 1.1 — Remove invalid includes
-- [ ] Remove `#include <stdio.h>` from `kernel/isr.c`
-- [ ] Remove `#include <stdio.h>` from `drivers/mouse.c`
-- [ ] Remove `#include <string.h>` from `drivers/disk.c` (use our custom `include/string.h`)
+- [x] Remove `#include <stdio.h>` from `kernel/isr.c`
+- [x] Remove `#include <stdio.h>` from `drivers/mouse.c`
+- [x] Remove `#include <string.h>` from `drivers/disk.c` (use our custom `include/string.h`)
 
 ### 1.2 — Unify type definitions
-- [ ] Pick one naming style: either `uint8` or `uint8_t` — not both.
-- [ ] Update `include/types.h` to define the chosen style.
-- [ ] Update `include/io_ports.h` to use consistent types.
-- [ ] Remove duplicate I/O functions (`inports`/`inportw` are identical).
+- [x] Pick one naming style: either `uint8` or `uint8_t` — not both.
+- [x] Update `include/types.h` to define the chosen style.
+- [x] Update `include/io_ports.h` to use consistent types.
+- [x] Remove duplicate I/O functions (`inports`/`inportw` are identical).
 
 ### 1.3 — Fix minor standard-compliance issues
-- [ ] `lib/string.c` — Make `memcmp()` return 0 on match (standard behavior). Currently returns 0 on mismatch.
-- [ ] `lib/string.c` — Make `strcpy()` return `char*` instead of `int`.
+- [x] `lib/string.c` — Make `memcmp()` return 0 on match (standard behavior). Currently returns 0 on mismatch.
+- [x] `lib/string.c` — Make `strcpy()` return `char*` instead of `int`.
 
 ### 1.4 — Clean up linker script
-- [ ] `boot/linker.ld` — Remove the hardcoded Multiboot header (it's already in `bootloader.asm`).
-- [ ] Fix the duplicate `.rodata` section definition.
+- [x] `boot/linker.ld` — Remove the hardcoded Multiboot header (it's already in `bootloader.asm`).
+- [x] Fix the duplicate `.rodata` section definition.
 
 ### 1.5 — Clean up kernel.c
-- [ ] Make `kmain()` accept Multiboot parameters: `void kmain(unsigned long magic, unsigned long addr)`.
-- [ ] Remove debug `print()` calls from `kernel/memory.c`.
-- [ ] Add a proper panic function that prints an error message (replace the silent infinite loop in `isr.c`).
+- [x] Make `kmain()` accept Multiboot parameters: `void kmain(unsigned long magic, unsigned long addr)`.
+- [x] Remove debug `print()` calls from `kernel/memory.c`.
+- [x] Add a proper panic function that prints an error message (replace the silent infinite loop in `isr.c`).
 
 ### 1.6 — Fix IDT privilege levels
-- [ ] `kernel/idt.c` — Remove `| 0x60` from `idt_set_entry`. Only syscall entry (128) should have DPL=3. All others should be DPL=0.
+- [x] `kernel/idt.c` — Remove `| 0x60` from `idt_set_entry`. Only syscall entry (128) should have DPL=3. All others should be DPL=0.
 
 ### 1.7 — Protect kernel memory
-- [ ] `kernel/memory.c` — Mark kernel pages (0x100000 and above, up to `_kernel_end`) as reserved so they cannot be allocated.
+- [x] `kernel/memory.c` — Mark kernel pages (0x100000 and above, up to `_kernel_end`) as reserved so they cannot be allocated.
 
 ### 1.8 — Build system improvements
-- [ ] Add `make clean` target to the Makefile.
-- [ ] Add `-Wall -Wextra -Werror` to compiler flags.
-- [ ] Verify the project compiles with zero warnings after all cleanups.
+- [x] Add `make clean` target to the Makefile.
+- [x] Add `-Wall -Wextra -Werror` to compiler flags.
+- [x] Verify the project compiles with zero warnings after all cleanups.
 
 ---
 
