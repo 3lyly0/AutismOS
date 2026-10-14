@@ -91,8 +91,25 @@
 #define SCAN_CODE_KEY_F11         0x57
 #define SCAN_CODE_KEY_F12         0x58
 
+#define KB_KEY_WIN     ((char)0x80)  // Windows key (Start menu)
+#define KB_KEY_F10     ((char)0x81)  // F10 (Quit)
+#define KB_KEY_F12     ((char)0x82)  // F12
+#define KB_KEY_F1      ((char)0x83)
+#define KB_KEY_F2      ((char)0x84)
+#define KB_KEY_F3      ((char)0x85)
+#define KB_KEY_F4      ((char)0x86)
+#define KB_KEY_F5      ((char)0x87)
+#define KB_KEY_TAB     ((char)0x88)
+#define KB_KEY_UP      ((char)0x89)
+#define KB_KEY_DOWN    ((char)0x8A)
+#define KB_KEY_LEFT    ((char)0x8B)
+#define KB_KEY_RIGHT   ((char)0x8C)
+#define KB_KEY_CTRL_C  ((char)0x03)
 
-void keyboard_init();
-char kb_getchar();
+void keyboard_init(void);
+char kb_getchar(void);
+int kb_has_char(void);
+int readline_buf(char* buffer, int max_len, const char* prompt);
+char* readline(const char* prompt);
 
 #endif

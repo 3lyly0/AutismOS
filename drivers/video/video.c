@@ -47,6 +47,17 @@ void print(const char *str) {
         if (ch == '\b') {
             if (g_text_col >= 6) {
                 g_text_col -= 6;
+                draw_filled_rect(g_text_col, g_text_row, 6, 8, COLOR_BLACK);
+            }
+            continue;
+        }
+
+        if (ch == ' ') {
+            draw_filled_rect(g_text_col, g_text_row, 6, 8, COLOR_BLACK);
+            g_text_col += 6;
+            if (g_text_col > SCREEN_WIDTH - 6) {
+                g_text_col = 0;
+                g_text_row += 10;
             }
             continue;
         }
